@@ -22,6 +22,7 @@
                 <InputFile OnChange="OnFilesChanged"
                           Accept=".mp4,.avi,.mov"
                           class="mt-4" />
+                <MudText Typo="Typo.body2" Class="mt-2">Maximum file size: 3MB</MudText>
             </MudTab>
         </MudTabs>
 
@@ -74,11 +75,17 @@
     private IBrowserFile? videoFile;
     private bool IsProcessing { get; set; }
     private VideoProcessingResponse? Response { get; set; }
+    private const long MaxFileSize = 3000000; // 3MB
 
     private bool CanProcess => !string.IsNullOrEmpty(youtubeUrl) || videoFile != null;
 
     private void OnFilesChanged(InputFileChangeEventArgs e)
     {
+        if (e.File.Size > MaxFileSize)
+        {
+            Snackbar.Add("File size exceeds the 3MB limit", Severity.Error);
+            return;
+        }
         videoFile = e.File;
         youtubeUrl = string.Empty;
     }
@@ -99,7 +106,7 @@
             
             if (videoFile != null)
             {
-                var fileContent = new StreamContent(videoFile.OpenReadStream());
+                var fileContent = new StreamContent(videoFile.OpenReadStream(maxAllowedSize: MaxFileSize));
                 formData.Add(fileContent, "videoFile", videoFile.Name);
             }
 
