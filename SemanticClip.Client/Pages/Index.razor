@@ -1,150 +1,159 @@
 @page "/"
+@using SemanticClip.Core
+@using SemanticClip.Client.Services
+@using System.Net.WebSockets
 @using SemanticClip.Core.Models
+@using System.Text
+@using System.Text.Json
 @using MudBlazor
-@using MudBlazor.Utilities
-@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
 @inject HttpClient Http
-@inject ISnackbar Snackbar
+@inject ILogger<Index> Logger
+@inject VideoProcessingApiClient VideoProcessingApiClient
+
+<PageTitle>SemanticClip - Video Processing</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <MudPaper Class="pa-4">
-        <MudText Typo="Typo.h4" Class="mb-4">SemanticClip - Video to Blog Converter</MudText>
+        <MudText Typo="Typo.h4" Class="mb-4">Video Processing</MudText>
         
         <MudTabs>
-            <MudTab Text="YouTube URL">
-                <MudTextField @bind-Value="youtubeUrl" 
-                            Label="YouTube URL" 
-                            Placeholder="Enter YouTube video URL"
-                            FullWidth="true"
-                            Class="mt-4" />
-            </MudTab>
-            <MudTab Text="Upload Video">
-                <InputFile OnChange="OnFilesChanged"
-                          Accept=".mp4,.avi,.mov"
-                          class="mt-4" />
-                <MudText Typo="Typo.body2" Class="mt-2">Maximum file size: 3MB</MudText>
-            </MudTab>
+            <MudTabPanel Text="Upload Video">
+                <MudPaper Class="pa-4 mt-4">
+                    <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+                        <MudTextField @bind-Value="youtubeUrl" Label="YouTube URL" Placeholder="Enter YouTube URL" />
+                        
+                        <MudFileUpload T="IBrowserFile" FilesChanged="AssignSelectedFile">
+    <ActivatorContent>
+        <MudFab Color="Color.Success"
+                StartIcon="@Icons.Material.Filled.AttachFile" />
+    </ActivatorContent>
+</MudFileUpload>
+
+                    </MudForm>
+
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@ProcessVideo" Disabled="@isProcessing" Class="mt-4">
+                        @if (isProcessing)
+                        {
+                            <MudProgressCircular Color="Color.Default" Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                        }
+                        Process Video
+                    </MudButton>
+                </MudPaper>
+            </MudTabPanel>
         </MudTabs>
 
-        <MudButton Variant="Variant.Filled" 
-                   Color="Color.Primary" 
-                   OnClick="ProcessVideo"
-                   Disabled="@(!CanProcess)"
-                   Class="mt-4">
-            Process Video
-        </MudButton>
-
-        @if (IsProcessing)
+        @if (isProcessing)
         {
-            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mt-4" />
-            <MudText Class="mt-2">Processing video...</MudText>
+            <MudPaper Class="pa-4 mt-4">
+                <MudText Typo="Typo.h6" Class="mb-2">Processing Progress</MudText>
+                <MudProgressLinear Value="@progress" Color="@GetProgressColor()" Class="mb-2" />
+                <MudText>@currentOperation</MudText>
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <MudAlert Severity="Severity.Error" Class="mt-2">@errorMessage</MudAlert>
+                }
+            </MudPaper>
         }
 
-        @if (ErrorDetails != null)
+        @if (!string.IsNullOrEmpty(response?.Transcript))
         {
-            <MudAlert Severity="Severity.Error" Class="mt-4">
-                <MudText>Error Details:</MudText>
-                <MudText>@ErrorDetails</MudText>
-            </MudAlert>
+            <MudPaper Class="pa-4 mt-4">
+                <MudText Typo="Typo.h6" Class="mb-2">Transcript</MudText>
+                <MudText>@response.Transcript</MudText>
+            </MudPaper>
         }
 
-        @if (Response != null)
+        @if (response?.Chapters?.Any() == true)
         {
-            <MudExpansionPanels MultiExpansion="true" Class="mt-4">
-                <MudExpansionPanel Text="Transcript">
-                    <MudText>@Response.Transcript</MudText>
-                </MudExpansionPanel>
-                
-                <MudExpansionPanel Text="Chapters">
-                    <MudTable Items="@Response.Chapters" Hover="true" Dense="true">
-                        <HeaderContent>
-                            <MudTh>Title</MudTh>
-                            <MudTh>Start Time</MudTh>
-                            <MudTh>End Time</MudTh>
-                        </HeaderContent>
-                        <RowTemplate>
-                            <MudTd DataLabel="Title">@context.Title</MudTd>
-                            <MudTd DataLabel="Start Time">@context.StartTime.ToString(@"hh\:mm\:ss")</MudTd>
-                            <MudTd DataLabel="End Time">@context.EndTime.ToString(@"hh\:mm\:ss")</MudTd>
-                        </RowTemplate>
-                    </MudTable>
-                </MudExpansionPanel>
-                
-                <MudExpansionPanel Text="Blog Post">
-                    <MudText>@Response.BlogPost</MudText>
-                </MudExpansionPanel>
-            </MudExpansionPanels>
+            <MudPaper Class="pa-4 mt-4">
+                <MudText Typo="Typo.h6" Class="mb-2">Chapters</MudText>
+                <MudList T="Chapter">
+                    @foreach (var chapter in response.Chapters)
+                    {
+                        <MudListItem T="Chapter" Text="@($"{chapter.Title} ({chapter.StartTime:hh\\:mm\\:ss} - {chapter.EndTime:hh\\:mm\\:ss})")" />
+                    }
+                </MudList>
+            </MudPaper>
+        }
+
+        @if (!string.IsNullOrEmpty(response?.BlogPost))
+        {
+            <MudPaper Class="pa-4 mt-4">
+                <MudText Typo="Typo.h6" Class="mb-2">Blog Post</MudText>
+                <MudText>@response.BlogPost</MudText>
+            </MudPaper>
         }
     </MudPaper>
 </MudContainer>
 
 @code {
+    private MudForm? form;
+    private bool success;
+    private string[] errors = Array.Empty<string>();
     private string youtubeUrl = string.Empty;
     private IBrowserFile? videoFile;
-    private bool IsProcessing { get; set; }
-    private VideoProcessingResponse? Response { get; set; }
-    private string? ErrorDetails { get; set; }
-    private const long MaxFileSize = 3000000; // 3MB
+    private bool isProcessing;
+    private VideoProcessingResponse? response;
+    private int progress;
+    private string currentOperation = string.Empty;
+    private string errorMessage = string.Empty;
 
-    private bool CanProcess => !string.IsNullOrEmpty(youtubeUrl) || videoFile != null;
-
-    private void OnFilesChanged(InputFileChangeEventArgs e)
+    private void AssignSelectedFile(IBrowserFile? file)
     {
-        if (e.File.Size > MaxFileSize)
-        {
-            Snackbar.Add("File size exceeds the 3MB limit", Severity.Error);
-            return;
-        }
-        videoFile = e.File;
-        youtubeUrl = string.Empty;
+        videoFile = file;
     }
 
     private async Task ProcessVideo()
     {
+        if (string.IsNullOrEmpty(youtubeUrl) && videoFile == null)
+        {
+            return;
+        }
+
+        isProcessing = true;
+        progress = 0;
+        currentOperation = "Initializing";
+        errorMessage = string.Empty;
+        response = null;
+
         try
         {
-            IsProcessing = true;
-            Response = null;
-            ErrorDetails = null;
+            await VideoProcessingApiClient.ProcessVideoAsync(youtubeUrl, videoFile, async (progressUpdate) =>
+            {
+                progress = progressUpdate.Percentage;
+                currentOperation = progressUpdate.CurrentOperation;
+                errorMessage = progressUpdate.Error ?? string.Empty;
 
-            var formData = new MultipartFormDataContent();
-            
-            if (!string.IsNullOrEmpty(youtubeUrl))
-            {
-                formData.Add(new StringContent(youtubeUrl), "youtubeUrl");
-            }
-            
-            if (videoFile != null)
-            {
-                var fileContent = new StreamContent(videoFile.OpenReadStream(maxAllowedSize: MaxFileSize));
-                formData.Add(fileContent, "videoFile", videoFile.Name);
-            }
-
-            var response = await Http.PostAsync("api/VideoProcessing/process", formData);
-            if (response.IsSuccessStatusCode)
-            {
-                Response = await response.Content.ReadFromJsonAsync<VideoProcessingResponse>();
-                if (Response?.Status == "Failed")
+                if (progressUpdate.Status == "Completed")
                 {
-                    ErrorDetails = Response.ErrorMessage;
-                    Snackbar.Add(Response.ErrorMessage, Severity.Error);
+                    response = progressUpdate.Result;
+                    isProcessing = false;
                 }
-            }
-            else
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                ErrorDetails = $"Status Code: {response.StatusCode}\nError: {errorContent}";
-                Snackbar.Add($"Error processing video: {response.StatusCode}", Severity.Error);
-            }
+                else if (progressUpdate.Status == "Failed" || !string.IsNullOrEmpty(progressUpdate.Error))
+                {
+                    errorMessage = progressUpdate.Error ?? "Unknown error occurred.";
+                    isProcessing = false;
+                }
+                await InvokeAsync(StateHasChanged); // Ensure UI updates with progress (use InvokeAsync)
+            });
         }
         catch (Exception ex)
         {
-            ErrorDetails = $"Exception: {ex.Message}\nStack Trace: {ex.StackTrace}";
-            Snackbar.Add($"Error processing video: {ex.Message}", Severity.Error);
-        }
-        finally
-        {
-            IsProcessing = false;
+            Logger.LogError(ex, "Error processing video");
+            isProcessing = false;
+            errorMessage = ex.Message;
+            await InvokeAsync(StateHasChanged); // Ensure UI updates with error (use InvokeAsync)
         }
     }
-} 
+
+    private Color GetProgressColor()
+    {
+        return errorMessage switch
+        {
+            "" => Color.Primary,
+            _ => Color.Error
+        };
+    }
+}

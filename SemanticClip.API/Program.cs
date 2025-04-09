@@ -73,6 +73,10 @@ app.Use(async (context, next) =>
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
+
+// Enable WebSockets
+app.UseWebSockets();
+
 app.UseAuthorization();
 app.MapControllers();
 
