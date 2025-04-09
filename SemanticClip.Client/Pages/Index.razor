@@ -1,0 +1,129 @@
+@page "/"
+@using SemanticClip.Core.Models
+@using MudBlazor
+@using MudBlazor.Utilities
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h4" Class="mb-4">SemanticClip - Video to Blog Converter</MudText>
+        
+        <MudTabs>
+            <MudTab Text="YouTube URL">
+                <MudTextField @bind-Value="youtubeUrl" 
+                            Label="YouTube URL" 
+                            Placeholder="Enter YouTube video URL"
+                            FullWidth="true"
+                            Class="mt-4" />
+            </MudTab>
+            <MudTab Text="Upload Video">
+                <InputFile OnChange="OnFilesChanged"
+                          Accept=".mp4,.avi,.mov"
+                          class="mt-4" />
+            </MudTab>
+        </MudTabs>
+
+        <MudButton Variant="Variant.Filled" 
+                   Color="Color.Primary" 
+                   OnClick="ProcessVideo"
+                   Disabled="@(!CanProcess)"
+                   Class="mt-4">
+            Process Video
+        </MudButton>
+
+        @if (IsProcessing)
+        {
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mt-4" />
+            <MudText Class="mt-2">Processing video...</MudText>
+        }
+
+        @if (Response != null)
+        {
+            <MudExpansionPanels MultiExpansion="true" Class="mt-4">
+                <MudExpansionPanel Text="Transcript">
+                    <MudText>@Response.Transcript</MudText>
+                </MudExpansionPanel>
+                
+                <MudExpansionPanel Text="Chapters">
+                    <MudTable Items="@Response.Chapters" Hover="true" Dense="true">
+                        <HeaderContent>
+                            <MudTh>Title</MudTh>
+                            <MudTh>Start Time</MudTh>
+                            <MudTh>End Time</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Title">@context.Title</MudTd>
+                            <MudTd DataLabel="Start Time">@context.StartTime.ToString(@"hh\:mm\:ss")</MudTd>
+                            <MudTd DataLabel="End Time">@context.EndTime.ToString(@"hh\:mm\:ss")</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudExpansionPanel>
+                
+                <MudExpansionPanel Text="Blog Post">
+                    <MudText>@Response.BlogPost</MudText>
+                </MudExpansionPanel>
+            </MudExpansionPanels>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private string youtubeUrl = string.Empty;
+    private IBrowserFile? videoFile;
+    private bool IsProcessing { get; set; }
+    private VideoProcessingResponse? Response { get; set; }
+
+    private bool CanProcess => !string.IsNullOrEmpty(youtubeUrl) || videoFile != null;
+
+    private void OnFilesChanged(InputFileChangeEventArgs e)
+    {
+        videoFile = e.File;
+        youtubeUrl = string.Empty;
+    }
+
+    private async Task ProcessVideo()
+    {
+        try
+        {
+            IsProcessing = true;
+            Response = null;
+
+            var formData = new MultipartFormDataContent();
+            
+            if (!string.IsNullOrEmpty(youtubeUrl))
+            {
+                formData.Add(new StringContent(youtubeUrl), "youtubeUrl");
+            }
+            
+            if (videoFile != null)
+            {
+                var fileContent = new StreamContent(videoFile.OpenReadStream());
+                formData.Add(fileContent, "videoFile", videoFile.Name);
+            }
+
+            var response = await Http.PostAsync("api/VideoProcessing/process", formData);
+            if (response.IsSuccessStatusCode)
+            {
+                Response = await response.Content.ReadFromJsonAsync<VideoProcessingResponse>();
+                if (Response?.Status == "Failed")
+                {
+                    Snackbar.Add(Response.ErrorMessage, Severity.Error);
+                }
+            }
+            else
+            {
+                Snackbar.Add("Error processing video", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error processing video: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+} 

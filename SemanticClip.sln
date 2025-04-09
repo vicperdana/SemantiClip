@@ -1,0 +1,35 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# 
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SemanticClip.Client", "SemanticClip.Client\SemanticClip.Client.csproj", "{66C4A807-1F3E-4205-9E56-E07EB51CA53F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SemanticClip.API", "SemanticClip.API\SemanticClip.API.csproj", "{75EAC87C-42B2-4624-888C-C928B6FFDE06}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SemanticClip.Core", "SemanticClip.Core\SemanticClip.Core.csproj", "{3C50EBDC-0D5E-4112-9B6E-5B739F132E97}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SemanticClip.Infrastructure", "SemanticClip.Infrastructure\SemanticClip.Infrastructure.csproj", "{32101191-196C-4A8A-9AFE-4DD77233504A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{66C4A807-1F3E-4205-9E56-E07EB51CA53F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66C4A807-1F3E-4205-9E56-E07EB51CA53F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66C4A807-1F3E-4205-9E56-E07EB51CA53F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66C4A807-1F3E-4205-9E56-E07EB51CA53F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{75EAC87C-42B2-4624-888C-C928B6FFDE06}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{75EAC87C-42B2-4624-888C-C928B6FFDE06}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{75EAC87C-42B2-4624-888C-C928B6FFDE06}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{75EAC87C-42B2-4624-888C-C928B6FFDE06}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C50EBDC-0D5E-4112-9B6E-5B739F132E97}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C50EBDC-0D5E-4112-9B6E-5B739F132E97}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C50EBDC-0D5E-4112-9B6E-5B739F132E97}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C50EBDC-0D5E-4112-9B6E-5B739F132E97}.Release|Any CPU.Build.0 = Release|Any CPU
+		{32101191-196C-4A8A-9AFE-4DD77233504A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{32101191-196C-4A8A-9AFE-4DD77233504A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{32101191-196C-4A8A-9AFE-4DD77233504A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{32101191-196C-4A8A-9AFE-4DD77233504A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
