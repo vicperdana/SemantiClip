@@ -56,13 +56,13 @@ public class VideoProcessingService : IVideoProcessingService
             }
 
             // Transcribe video
-            response.Transcript = await TranscribeVideoAsync(videoStream);
+            //response.Transcript = await TranscribeVideoAsync(videoStream);
 
             // Generate chapters
-            response.Chapters = await GenerateChaptersAsync(response.Transcript);
+            //response.Chapters = await GenerateChaptersAsync(response.Transcript);
 
             // Generate blog post
-            response.BlogPost = await GenerateBlogPostAsync(response.Transcript, response.Chapters);
+            //response.BlogPost = await GenerateBlogPostAsync(response.Transcript, response.Chapters);
 
             response.Status = "Completed";
             return response;

@@ -26,7 +26,24 @@ public class VideoProcessingApiClient : IVideoProcessingService
 
     public async Task<VideoProcessingResponse> ProcessVideoAsync(VideoProcessingRequest request)
     {
-        var response = await _httpClient.PostAsJsonAsync("api/VideoProcessing/process", request);
+        // Create a multipart form data content
+        using var formData = new MultipartFormDataContent();
+        
+        // Add YouTube URL if provided
+        if (!string.IsNullOrEmpty(request.YouTubeUrl))
+        {
+            formData.Add(new StringContent(request.YouTubeUrl), "youtubeUrl");
+        }
+        
+        // Add video file if provided
+        if (request.VideoFile != null)
+        {
+            using var streamContent = new StreamContent(request.VideoFile.OpenReadStream());
+            formData.Add(streamContent, "videoFile", request.VideoFile.Name);
+        }
+        
+        // Send the request
+        var response = await _httpClient.PostAsync("api/VideoProcessing/process", formData);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<VideoProcessingResponse>() 
             ?? throw new Exception("Failed to deserialize response");

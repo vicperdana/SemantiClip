@@ -40,6 +40,14 @@
             <MudText Class="mt-2">Processing video...</MudText>
         }
 
+        @if (ErrorDetails != null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-4">
+                <MudText>Error Details:</MudText>
+                <MudText>@ErrorDetails</MudText>
+            </MudAlert>
+        }
+
         @if (Response != null)
         {
             <MudExpansionPanels MultiExpansion="true" Class="mt-4">
@@ -75,6 +83,7 @@
     private IBrowserFile? videoFile;
     private bool IsProcessing { get; set; }
     private VideoProcessingResponse? Response { get; set; }
+    private string? ErrorDetails { get; set; }
     private const long MaxFileSize = 3000000; // 3MB
 
     private bool CanProcess => !string.IsNullOrEmpty(youtubeUrl) || videoFile != null;
@@ -96,6 +105,7 @@
         {
             IsProcessing = true;
             Response = null;
+            ErrorDetails = null;
 
             var formData = new MultipartFormDataContent();
             
@@ -116,16 +126,20 @@
                 Response = await response.Content.ReadFromJsonAsync<VideoProcessingResponse>();
                 if (Response?.Status == "Failed")
                 {
+                    ErrorDetails = Response.ErrorMessage;
                     Snackbar.Add(Response.ErrorMessage, Severity.Error);
                 }
             }
             else
             {
-                Snackbar.Add("Error processing video", Severity.Error);
+                var errorContent = await response.Content.ReadAsStringAsync();
+                ErrorDetails = $"Status Code: {response.StatusCode}\nError: {errorContent}";
+                Snackbar.Add($"Error processing video: {response.StatusCode}", Severity.Error);
             }
         }
         catch (Exception ex)
         {
+            ErrorDetails = $"Exception: {ex.Message}\nStack Trace: {ex.StackTrace}";
             Snackbar.Add($"Error processing video: {ex.Message}", Severity.Error);
         }
         finally

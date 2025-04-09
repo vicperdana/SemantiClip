@@ -15,7 +15,7 @@ builder.Services.AddSwaggerGen();
 
 // Get the max request body size from configuration and convert to int safely
 var maxRequestBodySize = (int)Math.Min(
-    builder.Configuration.GetValue<long>("FileUpload:MaxRequestBodySizeInBytes"),
+    builder.Configuration.GetValue<long>("FileUpload:MaxRequestBodySizeInBytes", 3000000),
     int.MaxValue
 );
 
@@ -59,6 +59,17 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+// Configure request size limits middleware
+app.Use(async (context, next) =>
+{
+    var bodySizeFeature = context.Features.Get<IHttpMaxRequestBodySizeFeature>();
+    if (bodySizeFeature != null)
+    {
+        bodySizeFeature.MaxRequestBodySize = maxRequestBodySize;
+    }
+    await next();
+});
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
