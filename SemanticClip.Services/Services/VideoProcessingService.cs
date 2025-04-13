@@ -1,13 +1,14 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.AudioToText;
 using Microsoft.SemanticKernel.ChatCompletion;
-using Microsoft.SemanticKernel.Connectors.OpenAI;
 using SemanticClip.Core.Models;
 using SemanticClip.Core.Services;
 using YoutubeExplode;
 using YoutubeExplode.Videos.Streams;
 using System.Text;
+using System.Diagnostics.CodeAnalysis;
 
 namespace SemanticClip.Services;
 
@@ -15,7 +16,7 @@ public class VideoProcessingService : IVideoProcessingService
 {
     private readonly IConfiguration _configuration;
     private readonly Kernel _contentKernel;  // For content generation (GPT-4o)
-    private readonly Kernel _whisperKernel;  // For audio transcription (Whisper)
+    private readonly Kernel _audioKernel;   // For audio transcription (Whisper)
     private readonly ILogger<VideoProcessingService> _logger;
     private Action<VideoProcessingProgress>? _progressCallback;
 
@@ -32,14 +33,16 @@ public class VideoProcessingService : IVideoProcessingService
             _configuration["AzureOpenAI:ApiKey"]!);
         _contentKernel = contentBuilder.Build();
         
-        // Initialize Whisper Kernel
-        var whisperBuilder = Kernel.CreateBuilder();
-        whisperBuilder.AddAzureOpenAIChatCompletion(
+        #pragma warning disable // Dereference of a possibly null reference.
+        // Initialize Audio Kernel with Whisper
+        var audioBuilder = Kernel.CreateBuilder();
+        audioBuilder.AddAzureOpenAIAudioToText(
             _configuration["AzureOpenAI:WhisperDeploymentName"]!,
             _configuration["AzureOpenAI:Endpoint"]!,
             _configuration["AzureOpenAI:ApiKey"]!);
-        _whisperKernel = whisperBuilder.Build();
+        _audioKernel = audioBuilder.Build();
     }
+    # pragma warning restore // Dereference of a possibly null reference.
 
     public void SetProgressCallback(Action<VideoProcessingProgress>? callback)
     {
@@ -169,43 +172,41 @@ public class VideoProcessingService : IVideoProcessingService
 
     public async Task<string> TranscribeVideoAsync(string videoPath)
     {
+        string? audioPath = null;
         try
         {
             // Step 1: Extract audio from video using FFmpeg
             _logger.LogInformation("Extracting audio from video: {VideoPath}", videoPath);
             UpdateProgress("In Progress", 30, "Extracting audio from video");
             
-            string audioPath = await ExtractAudioFromVideoAsync(videoPath);
+            audioPath = await ExtractAudioFromVideoAsync(videoPath);
             
-            try
-            {
-                // Step 2: Transcribe the extracted audio with OpenAI Whisper
-                _logger.LogInformation("Transcribing audio: {AudioPath}", audioPath);
-                UpdateProgress("In Progress", 50, "Transcribing audio");
-                
-                return await TranscribeWithWhisperAsync(audioPath);
-            }
-            finally
-            {
-                // Clean up the temporary audio file
-                if (File.Exists(audioPath))
-                {
-                    try
-                    {
-                        File.Delete(audioPath);
-                        _logger.LogInformation("Deleted temporary audio file: {AudioPath}", audioPath);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Failed to delete temporary audio file: {AudioPath}", audioPath);
-                    }
-                }
-            }
+            // Step 2: Transcribe the extracted audio with OpenAI Whisper
+            _logger.LogInformation("Transcribing audio: {AudioPath}", audioPath);
+            UpdateProgress("In Progress", 50, "Transcribing audio");
+            
+            return await TranscribeWithWhisperAsync(audioPath);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error transcribing video: {VideoPath}", videoPath);
             throw new Exception($"Video transcription failed: {ex.Message}", ex);
+        }
+        finally
+        {
+            // Clean up the temporary audio file only after transcription is complete
+            if (audioPath != null && File.Exists(audioPath))
+            {
+                try
+                {
+                    File.Delete(audioPath);
+                    _logger.LogInformation("Deleted temporary audio file: {AudioPath}", audioPath);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to delete temporary audio file: {AudioPath}", audioPath);
+                }
+            }
         }
     }
     
@@ -287,30 +288,28 @@ public class VideoProcessingService : IVideoProcessingService
             throw new Exception($"Audio extraction failed: {ex.Message}", ex);
         }
     }
-    
+    #pragma warning disable CS8604 // Possible null reference argument.
     private async Task<string> TranscribeWithWhisperAsync(string audioFilePath)
     {
         try
         {
-            // Using Whisper model for transcription
-            _logger.LogInformation("Transcribing audio with Whisper via Azure OpenAI: {AudioPath}", audioFilePath);
+            _logger.LogInformation("Transcribing audio with Whisper via Semantic Kernel: {AudioPath}", audioFilePath);
             
-            var chatCompletion = _whisperKernel.GetRequiredService<IChatCompletionService>();
-            var chat = new ChatHistory();
-            
-            // Read the audio file as bytes
-            byte[] audioBytes = await File.ReadAllBytesAsync(audioFilePath);
-            string audioBase64 = Convert.ToBase64String(audioBytes);
-            
-            // Instruct the model to transcribe the audio
-            chat.AddSystemMessage("You are a helpful assistant that transcribes audio files. Please transcribe the audio content accurately.");
-            chat.AddUserMessage($"Transcribe the following audio file (base64 encoded WAV format): {audioBase64.Substring(0, Math.Min(50, audioBase64.Length))}...[base64 audio content]");
-            
-            // Get the transcription
-            var response = await chatCompletion.GetChatMessageContentAsync(chat);
+            // Use IAudioToTextService
+            #pragma warning disable SKEXP0001
+            var audioToTextService = _audioKernel.GetRequiredService<IAudioToTextService>();
+            #pragma warning restore SKEXP0001
+            // Read the audio file as a stream
+            using var audioFileStream = new FileStream(audioFilePath, FileMode.Open, FileAccess.Read);
+            var audioFileBinaryData = await BinaryData.FromStreamAsync(audioFileStream!);
+            #pragma warning disable SKEXP0001
+            AudioContent audioContent = new(audioFileBinaryData, mimeType: null);
+            #pragma warning restore SKEXP0001
+            // Transcribe the audio
+            var result = await audioToTextService.GetTextContentAsync(audioContent);
             _logger.LogInformation("Transcription completed successfully");
             
-            return response.Content;
+            return result.Text;
         }
         catch (Exception ex)
         {
