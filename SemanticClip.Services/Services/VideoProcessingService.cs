@@ -10,7 +10,7 @@ using YoutubeExplode;
 using YoutubeExplode.Videos.Streams;
 using System.Text;
 
-namespace SemanticClip.Infrastructure.Services;
+namespace SemanticClip.Services;
 
 public class VideoProcessingService : IVideoProcessingService
 {
@@ -309,4 +309,4 @@ public class VideoProcessingService : IVideoProcessingService
         var response = await chatCompletion.GetChatMessageContentAsync(chat);
         return response.Content;
     }
-} 
+}

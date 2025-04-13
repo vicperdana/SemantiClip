@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SemanticClip.Core.Models;
 using SemanticClip.Core.Services;
-using SemanticClip.Infrastructure.Services;
+using SemanticClip.Services;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
