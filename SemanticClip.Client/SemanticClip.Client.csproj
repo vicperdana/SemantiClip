@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SemanticClip.Core\SemanticClip.Core.csproj" />
+    <ProjectReference Include="..\SemanticClip.Services\SemanticClip.Services.csproj" />
   </ItemGroup>
 
 </Project>

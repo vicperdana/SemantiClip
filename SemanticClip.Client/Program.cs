@@ -11,8 +11,9 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 // Configure HttpClient to point to the API
+var apiBaseAddress = builder.Configuration["ApiBaseAddress"] ?? "http://127.0.0.1:5290";
 builder.Services.AddScoped(sp => new HttpClient { 
-    BaseAddress = new Uri(builder.HostEnvironment.BaseAddress),
+    BaseAddress = new Uri(apiBaseAddress),
     MaxResponseContentBufferSize = 3000000 // 3MB
 });
 
@@ -36,6 +37,6 @@ builder.Services.AddMudServices(config =>
 });
 
 // Register VideoProcessingApiClient
-builder.Services.AddScoped<IVideoProcessingService, VideoProcessingApiClient>();
+builder.Services.AddScoped<VideoProcessingApiClient>();
 
 await builder.Build().RunAsync();

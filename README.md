@@ -1,26 +1,29 @@
-# SemanticClip
+# SemantiClip
 
-SemanticClip is a powerful application that processes videos by downloading them from YouTube, transcribing the audio, generating chapters, and creating blog posts based on the content. It's built with .NET and Blazor WebAssembly, providing a modern and responsive user interface.
+SemantiClip is a powerful application that processes videos by downloading them from YouTube, transcribing the audio, generating chapters, and creating blog posts based on the content. It's built with .NET and Blazor WebAssembly, providing a modern and responsive user interface.
 
 ## Table of Contents
-- [About The Project](#about-the-project)
-- [Built With](#built-with)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-- [Usage](#usage)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
+- [SemantiClip](#semanticlip)
+  - [Table of Contents](#table-of-contents)
+  - [About The Project](#about-the-project)
+  - [Built With](#built-with)
+  - [Getting Started](#getting-started)
+    - [Prerequisites](#prerequisites)
+    - [Installation](#installation)
+  - [Usage](#usage)
+  - [Roadmap](#roadmap)
+  - [Contributing](#contributing)
+  - [License](#license)
+  - [Contact](#contact)
 
 ## About The Project
 
 SemanticClip is designed to help content creators and educators by automating the process of creating written content from video material. The application:
 
 - Downloads videos from YouTube
-- Transcribes audio content using Azure Speech Services
-- Generates chapter markers for better content organization
+- Extracts audio using FFmpeg
+- Transcribes audio content using Azure OpenAI Whisper
+- Generates chapter markers using GPT-4o for better content organization
 - Creates blog posts based on the transcript and chapters
 - Provides a modern web interface for easy interaction
 
@@ -30,29 +33,43 @@ SemanticClip is designed to help content creators and educators by automating th
 * [Blazor WebAssembly](https://dotnet.microsoft.com/apps/aspnet/web-apps/blazor)
 * [MudBlazor](https://mudblazor.com/) - UI Component Library
 * [Azure OpenAI](https://azure.microsoft.com/en-us/products/cognitive-services/openai-service)
-* [Azure Speech Services](https://azure.microsoft.com/en-us/products/cognitive-services/speech-services)
+* [FFmpeg](https://ffmpeg.org/) - Media processing library
 
 ## Getting Started
 
 ### Prerequisites
 
 * .NET 9 SDK
-* Azure account with OpenAI and Speech Services access
+* Azure account with OpenAI service deployed
+* FFmpeg installed on the server
 * YouTube API key (for video downloading)
 
 ### Installation
 
 1. Clone the repo
    ```bash
-   git clone https://github.com/your_username/SemanticClip.git
+   git clone https://github.com/your_username/SemantiClip.git
    ```
 
-2. Configure Azure Services
+2. Configure Azure OpenAI Services
    - Set up Azure OpenAI service
-   - Configure Azure Speech Services
-   - Add your API keys to the configuration
+   - Deploy Whisper model for transcription (recommended: whisper)
+   - Deploy GPT-4o model for content generation (recommended: gpt-4o)
+   - Add your API keys and deployment names to the configuration
 
-3. Configure YouTube API
+3. Install FFmpeg
+   ```bash
+   # macOS
+   brew install ffmpeg
+   
+   # Ubuntu
+   sudo apt-get install ffmpeg
+   
+   # Windows
+   # Download from https://ffmpeg.org/download.html and add to PATH
+   ```
+
+4. Configure YouTube API
    - Create a YouTube API key
    - Add the key to your configuration
 
@@ -76,6 +93,9 @@ SemanticClip is designed to help content creators and educators by automating th
 
 ## Roadmap
 
+- [x] Improve transcription quality with Whisper
+- [x] Implement FFmpeg for better audio extraction
+- [x] Use specialized models for different tasks
 - [ ] Add support for multiple video formats
 - [ ] Implement batch processing
 - [ ] Add export options (PDF, Word, etc.)
@@ -102,4 +122,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 Your Name - [@your_twitter](https://twitter.com/your_twitter) - email@example.com
 
-Project Link: [https://github.com/your_username/SemanticClip](https://github.com/your_username/SemanticClip)
+Project Link: [https://github.com/vicperdana/SemantiClip](https://github.com/vicperdana/SemantiClip)
