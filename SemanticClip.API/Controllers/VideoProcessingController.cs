@@ -151,7 +151,7 @@ public class VideoProcessingController : ControllerBase
         await webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
-    [HttpPost("transcribe")]
+   [HttpPost("transcribe")]
     public async Task<ActionResult<string>> TranscribeVideo(IFormFile videoFile)
     {
         string? tempFilePath = null;

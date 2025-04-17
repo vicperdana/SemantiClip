@@ -8,216 +8,119 @@ using SemanticClip.Core.Services;
 using YoutubeExplode;
 using YoutubeExplode.Videos.Streams;
 using System.Text;
-using System.Diagnostics.CodeAnalysis;
+using AngleSharp.Common;
+using Microsoft.SemanticKernel.Process;
+using YoutubeExplode.Videos;
 
 namespace SemanticClip.Services;
 
-public class VideoProcessingService : IVideoProcessingService
+#pragma warning disable SKEXP0080
+// Video Processing Step 1: Prepare Video
+public class PrepareVideoStep : KernelProcessStep
 {
-    private readonly IConfiguration _configuration;
-    private readonly Kernel _contentKernel;  // For content generation (GPT-4o)
-    private readonly Kernel _audioKernel;   // For audio transcription (Whisper)
-    private readonly ILogger<VideoProcessingService> _logger;
-    private Action<VideoProcessingProgress>? _progressCallback;
-
-    public VideoProcessingService(IConfiguration configuration, ILogger<VideoProcessingService> logger)
+    public static class Functions
     {
-        _configuration = configuration;
-        _logger = logger;
-        
-        // Initialize Content Kernel (GPT-4o)
-        var contentBuilder = Kernel.CreateBuilder();
-        contentBuilder.AddAzureOpenAIChatCompletion(
-            _configuration["AzureOpenAI:ContentDeploymentName"]!,
-            _configuration["AzureOpenAI:Endpoint"]!,
-            _configuration["AzureOpenAI:ApiKey"]!);
-        _contentKernel = contentBuilder.Build();
-        
-        #pragma warning disable // Dereference of a possibly null reference.
-        // Initialize Audio Kernel with Whisper
-        var audioBuilder = Kernel.CreateBuilder();
-        audioBuilder.AddAzureOpenAIAudioToText(
-            _configuration["AzureOpenAI:WhisperDeploymentName"]!,
-            _configuration["AzureOpenAI:Endpoint"]!,
-            _configuration["AzureOpenAI:ApiKey"]!);
-        _audioKernel = audioBuilder.Build();
+        public const string PrepareVideo = nameof(PrepareVideo);
     }
-    # pragma warning restore // Dereference of a possibly null reference.
-
-    public void SetProgressCallback(Action<VideoProcessingProgress>? callback)
+    internal string _videoPath;
+    // Video Processing Step 1: Confirm Video Existence
+    [KernelFunction(Functions.PrepareVideo)]
+    public async Task<string> PrepareVideoAsync(VideoProcessingRequest request, KernelProcessStepContext context)
     {
-        _progressCallback = callback;
-    }
-
-    private void UpdateProgress(string status, int percentage, string currentOperation = "", string? error = null)
-    {
-        if (_progressCallback != null)
+        
+        /*void UpdateProgress(string status, int percentage, string currentOperation = "", string? error = null)
         {
-            var progress = new VideoProcessingProgress
+            progressCallback?.Invoke(new VideoProcessingProgress
             {
                 Status = status,
                 Percentage = percentage,
                 CurrentOperation = currentOperation,
                 Error = error
-            };
-            _progressCallback(progress);
-        }
-    }
-
-    public async Task<VideoProcessingResponse> ProcessVideoAsync(VideoProcessingRequest request)
-    {
-        try
+            });
+        }*/
+        
+        //UpdateProgress("Starting", 0, "Initializing");
+        
+        if (string.IsNullOrEmpty(request.YouTubeUrl) && string.IsNullOrEmpty(request.FileContent))
         {
-            UpdateProgress("Starting", 0, "Initializing");
+            throw new ArgumentException("Either YouTube URL or file content must be provided");
+        }
+
+        
+        
+        if (!string.IsNullOrEmpty(request.YouTubeUrl))
+        {
+            //UpdateProgress("Downloading", 10, "Downloading YouTube video");
+            var youtube = new YoutubeClient();
+            var video = await youtube.Videos.GetAsync(request.YouTubeUrl);
+            var streamManifest = await youtube.Videos.Streams.GetManifestAsync(video.Id);
+            var streamInfo = streamManifest.GetMuxedStreams().GetWithHighestVideoQuality();
             
-            if (string.IsNullOrEmpty(request.YouTubeUrl) && string.IsNullOrEmpty(request.FileContent))
-            {
-                throw new ArgumentException("Either YouTube URL or file content must be provided");
-            }
-
-            string? videoPath = null;
-            try
-            {
-                if (!string.IsNullOrEmpty(request.YouTubeUrl))
-                {
-                    UpdateProgress("Downloading", 10, "Downloading YouTube video");
-                    videoPath = await DownloadYouTubeVideoAsync(request.YouTubeUrl);
-                }
-                else if (!string.IsNullOrEmpty(request.FileContent))
-                {
-                    UpdateProgress("Processing", 10, "Processing uploaded file");
-                    videoPath = await SaveUploadedFileAsync(request.FileName, request.FileContent);
-                }
-
-                if (string.IsNullOrEmpty(videoPath))
-                {
-                    throw new InvalidOperationException("Failed to obtain video file");
-                }
-
-                UpdateProgress("Transcribing", 30, "Transcribing video");
-                var transcript = await TranscribeVideoAsync(videoPath);
-
-                UpdateProgress("Generating", 60, "Generating chapters");
-                var chapters = await GenerateChaptersAsync(transcript);
-
-                UpdateProgress("Creating", 80, "Creating blog post");
-                var blogPost = await GenerateBlogPostAsync(transcript, chapters);
-
-                UpdateProgress("Completed", 100, "Processing complete");
-
-                return new VideoProcessingResponse
-                {
-                    Status = "Completed",
-                    Transcript = transcript,
-                    Chapters = chapters,
-                    BlogPost = blogPost
-                };
-            }
-            finally
-            {
-                if (!string.IsNullOrEmpty(videoPath) && File.Exists(videoPath))
-                {
-                    try
-                    {
-                        File.Delete(videoPath);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Failed to delete temporary video file: {Path}", videoPath);
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error processing video");
-            UpdateProgress("Error", 0, "Error occurred", ex.Message);
-            throw;
-        }
-    }
-
-    private async Task<string> DownloadYouTubeVideoAsync(string youtubeUrl)
-    {
-        var youtube = new YoutubeClient();
-        var video = await youtube.Videos.GetAsync(youtubeUrl);
-        var streamManifest = await youtube.Videos.Streams.GetManifestAsync(video.Id);
-        var streamInfo = streamManifest.GetMuxedStreams().GetWithHighestVideoQuality();
-        
-        // Create a temporary file path
-        var tempPath = Path.GetTempFileName();
-        var fileExtension = streamInfo.Container.Name;
-        var finalPath = Path.ChangeExtension(tempPath, fileExtension);
-        File.Move(tempPath, finalPath);
-        
-        // Download the video to the temporary file
-        await youtube.Videos.Streams.DownloadAsync(streamInfo, finalPath);
-        
-        return finalPath;
-    }
-
-    private async Task<string> SaveUploadedFileAsync(string fileName, string fileContent)
-    {
-        // Create a temporary file path
-        var tempPath = Path.GetTempFileName();
-        var fileExtension = Path.GetExtension(fileName);
-        var finalPath = Path.ChangeExtension(tempPath, fileExtension);
-        File.Move(tempPath, finalPath);
-        
-        // Save the uploaded file
-        var fileBytes = Convert.FromBase64String(fileContent);
-        await File.WriteAllBytesAsync(finalPath, fileBytes);
-        
-        return finalPath;
-    }
-
-    public async Task<string> TranscribeVideoAsync(string videoPath)
-    {
-        string? audioPath = null;
-        try
-        {
-            // Step 1: Extract audio from video using FFmpeg
-            _logger.LogInformation("Extracting audio from video: {VideoPath}", videoPath);
-            UpdateProgress("In Progress", 30, "Extracting audio from video");
+            // Create a temporary file path
+            var tempPath = Path.GetTempFileName();
+            var fileExtension = streamInfo.Container.Name;
+            var finalPath = Path.ChangeExtension(tempPath, fileExtension);
+            File.Move(tempPath, finalPath);
             
-            audioPath = await ExtractAudioFromVideoAsync(videoPath);
-            
-            // Step 2: Transcribe the extracted audio with OpenAI Whisper
-            _logger.LogInformation("Transcribing audio: {AudioPath}", audioPath);
-            UpdateProgress("In Progress", 50, "Transcribing audio");
-            
-            return await TranscribeWithWhisperAsync(audioPath);
+            // Download the video to the temporary file
+            await youtube.Videos.Streams.DownloadAsync(streamInfo, finalPath);
+            _videoPath = finalPath;
         }
-        catch (Exception ex)
+        else
         {
-            _logger.LogError(ex, "Error transcribing video: {VideoPath}", videoPath);
-            throw new Exception($"Video transcription failed: {ex.Message}", ex);
+            //UpdateProgress("Processing", 10, "Processing uploaded file");
+            // Create a temporary file path
+            var tempPath = Path.GetTempFileName();
+            var fileExtension = Path.GetExtension(request.FileName);
+            var finalPath = Path.ChangeExtension(tempPath, fileExtension);
+            File.Move(tempPath, finalPath);
+            
+            // Save the uploaded file
+            var fileBytes = Convert.FromBase64String(request.FileContent!);
+            await File.WriteAllBytesAsync(finalPath, fileBytes);
+            _videoPath = finalPath;
         }
-        finally
-        {
-            // Clean up the temporary audio file only after transcription is complete
-            if (audioPath != null && File.Exists(audioPath))
-            {
-                try
-                {
-                    File.Delete(audioPath);
-                    _logger.LogInformation("Deleted temporary audio file: {AudioPath}", audioPath);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to delete temporary audio file: {AudioPath}", audioPath);
-                }
-            }
-        }
+        
+        await context.EmitEventAsync(new KernelProcessEvent{Id = "VideoPrepared", Data = _videoPath});
+        return _videoPath;
     }
-    
-    private async Task<string> ExtractAudioFromVideoAsync(string videoFilePath)
+}
+
+// Video Processing Step 2: Extract Audio and Transcribe
+public class TranscribeVideoStep : KernelProcessStep
+{
+    private string _transcript = "";
+    private ILogger logger = new LoggerFactory().CreateLogger<TranscribeVideoStep>();
+    public static class Functions
     {
+        public const string TranscribeVideo = nameof(TranscribeVideoStep);
+    }
+    [KernelFunction(Functions.TranscribeVideo)]
+    public async Task<string> TranscribeVideoAsync(string videoPath, Kernel kernel, KernelProcessStepContext context)
+    {
+        /*void UpdateProgress(string status, int percentage, string currentOperation = "", string? error = null)
+        {
+            progressCallback?.Invoke(new VideoProcessingProgress
+            {
+                Status = status,
+                Percentage = percentage,
+                CurrentOperation = currentOperation,
+                Error = error
+            });
+        }*/
+        
+        
+        
+        // Step 1: Extract audio from video using FFmpeg
+        logger.LogInformation("Extracting audio from video: {VideoPath}", videoPath);
+        //UpdateProgress("In Progress", 30, "Extracting audio from video");
+        
         // Create a unique temporary file path for the extracted audio
         string outputAudioPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.wav");
         
         try
         {
-            _logger.LogInformation("Starting audio extraction from: {VideoPath} to {AudioPath}", videoFilePath, outputAudioPath);
+            logger.LogInformation("Starting audio extraction from: {VideoPath} to {AudioPath}", videoPath, outputAudioPath);
             
             // Execute the FFmpeg command to extract audio
             using var process = new System.Diagnostics.Process
@@ -226,7 +129,7 @@ public class VideoProcessingService : IVideoProcessingService
                 {
                     FileName = "ffmpeg",
                     // Extract audio with optimized settings for speech recognition
-                    Arguments = $"-i \"{videoFilePath}\" -vn -acodec pcm_s16le -ar 16000 -ac 1 \"{outputAudioPath}\" -y",
+                    Arguments = $"-i \"{videoPath}\" -vn -acodec pcm_s16le -ar 16000 -ac 1 \"{outputAudioPath}\" -y",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
@@ -245,7 +148,7 @@ public class VideoProcessingService : IVideoProcessingService
                 if (args.Data != null) errorBuilder.AppendLine(args.Data);
             };
             
-            _logger.LogInformation("Running FFmpeg command");
+            logger.LogInformation("Running FFmpeg command");
             process.Start();
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
@@ -257,7 +160,7 @@ public class VideoProcessingService : IVideoProcessingService
                 await process.WaitForExitAsync(cts.Token);
             }
             catch (OperationCanceledException) {
-                _logger.LogError("FFmpeg process timed out after 10 minutes");
+                logger.LogError("FFmpeg process timed out after 10 minutes");
                 process.Kill(true);
                 throw new Exception("Audio extraction timed out after 10 minutes");
             }
@@ -265,7 +168,7 @@ public class VideoProcessingService : IVideoProcessingService
             if (process.ExitCode != 0)
             {
                 string errorOutput = errorBuilder.ToString();
-                _logger.LogError("FFmpeg error: {Error}", errorOutput);
+                logger.LogError("FFmpeg error: {Error}", errorOutput);
                 throw new Exception($"Failed to extract audio: {errorOutput}");
             }
             
@@ -274,63 +177,98 @@ public class VideoProcessingService : IVideoProcessingService
                 throw new FileNotFoundException("Audio extraction did not produce the expected output file");
             }
             
-            _logger.LogInformation("Successfully extracted audio to: {AudioPath}", outputAudioPath);
-            return outputAudioPath;
+            logger.LogInformation("Successfully extracted audio to: {AudioPath}", outputAudioPath);
+            
+            // Step 2: Transcribe the extracted audio with OpenAI Whisper
+            logger.LogInformation("Transcribing audio: {AudioPath}", outputAudioPath);
+            //UpdateProgress("In Progress", 50, "Transcribing audio");
+            
+            logger.LogInformation("Transcribing audio with Whisper via Semantic Kernel: {AudioPath}", outputAudioPath);
+            
+            // Use IAudioToTextService
+            #pragma warning disable SKEXP0001
+            var audioToTextService = kernel.GetRequiredService<IAudioToTextService>();
+            
+            // Read the audio file as a stream
+            using var audioFileStream = new FileStream(outputAudioPath, FileMode.Open, FileAccess.Read);
+            var audioFileBinaryData = await BinaryData.FromStreamAsync(audioFileStream!);
+            
+            AudioContent audioContent = new(audioFileBinaryData, mimeType: null);
+            #pragma warning restore SKEXP0001
+            
+            // Transcribe the audio
+            var result = await audioToTextService.GetTextContentAsync(audioContent);
+            logger.LogInformation("Transcription completed successfully");
+            
+            // Store the transcript
+            _transcript = result.Text;
+            
+            // Clean up the audio file
+            try
+            {
+                File.Delete(outputAudioPath);
+                logger.LogInformation("Deleted temporary audio file: {AudioPath}", outputAudioPath);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to delete temporary audio file: {AudioPath}", outputAudioPath);
+            }
+            
+            // Instead of context.Set, emit the transcript as event payload
+            await context.EmitEventAsync("TranscriptionComplete", _transcript);
+            return _transcript;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during audio extraction");
+            logger.LogError(ex, "Error during audio extraction or transcription");
             if (File.Exists(outputAudioPath))
             {
                 try { File.Delete(outputAudioPath); } 
                 catch { /* Ignore cleanup errors */ }
             }
-            throw new Exception($"Audio extraction failed: {ex.Message}", ex);
+            throw new Exception($"Audio processing failed: {ex.Message}", ex);
         }
     }
-    #pragma warning disable CS8604 // Possible null reference argument.
-    private async Task<string> TranscribeWithWhisperAsync(string audioFilePath)
-    {
-        try
-        {
-            _logger.LogInformation("Transcribing audio with Whisper via Semantic Kernel: {AudioPath}", audioFilePath);
-            
-            // Use IAudioToTextService
-            #pragma warning disable SKEXP0001
-            var audioToTextService = _audioKernel.GetRequiredService<IAudioToTextService>();
-            #pragma warning restore SKEXP0001
-            // Read the audio file as a stream
-            using var audioFileStream = new FileStream(audioFilePath, FileMode.Open, FileAccess.Read);
-            var audioFileBinaryData = await BinaryData.FromStreamAsync(audioFileStream!);
-            #pragma warning disable SKEXP0001
-            AudioContent audioContent = new(audioFileBinaryData, mimeType: null);
-            #pragma warning restore SKEXP0001
-            // Transcribe the audio
-            var result = await audioToTextService.GetTextContentAsync(audioContent);
-            _logger.LogInformation("Transcription completed successfully");
-            
-            return result.Text;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error transcribing with Whisper API");
-            throw new Exception($"Whisper transcription failed: {ex.Message}", ex);
-        }
-    }
+}
 
-    public async Task<List<Chapter>> GenerateChaptersAsync(string transcript)
+// Video Processing Step 3: Generate Chapters
+public class GenerateChaptersStep : KernelProcessStep
+{
+    public static class Functions
     {
+        public const string GenerateChaptersStep = nameof(GenerateChaptersStep);
+    }
+    internal List<Chapter> _chapters = new();
+    [KernelFunction(Functions.GenerateChaptersStep)]
+    public async Task<List<Chapter>> GenerateChaptersAsync(string transcript, ILogger logger, Action<VideoProcessingProgress> progressCallback, Kernel kernel, KernelProcessStepContext context)
+    {
+        void UpdateProgress(string status, int percentage, string currentOperation = "", string? error = null)
+        {
+            progressCallback?.Invoke(new VideoProcessingProgress
+            {
+                Status = status,
+                Percentage = percentage,
+                CurrentOperation = currentOperation,
+                Error = error
+            });
+        }
+        
+        UpdateProgress("Generating", 60, "Generating chapters");
+        
         // Using GPT-4o for content generation
-        var chatCompletion = _contentKernel.GetRequiredService<IChatCompletionService>();
+        var chatCompletion = kernel.GetRequiredService<IChatCompletionService>();
         var chat = new ChatHistory();
 
         chat.AddSystemMessage("You are a helpful assistant that analyzes video transcripts and suggests logical chapter divisions with timestamps.");
         chat.AddUserMessage($"Please analyze this transcript and suggest chapters with timestamps:\n\n{transcript}");
 
         var response = await chatCompletion.GetChatMessageContentAsync(chat);
-        return ParseChaptersFromResponse(response.Content);
+        _chapters = ParseChaptersFromResponse(response.Content);
+        
+        await context.EmitEventAsync("ChaptersGenerated", _chapters);
+        return _chapters;
     }
-
+    
     private List<Chapter> ParseChaptersFromResponse(string response)
     {
         var chapters = new List<Chapter>();
@@ -361,17 +299,323 @@ public class VideoProcessingService : IVideoProcessingService
 
         return chapters;
     }
+}
 
-    public async Task<string> GenerateBlogPostAsync(string transcript, List<Chapter> chapters)
+// Video Processing Step 4: Generate Blog Post
+public class GenerateBlogPostStep : KernelProcessStep
+{   
+    public static class Functions
     {
+        public const string GenerateBlogPostStep = nameof(GenerateBlogPostStep);
+    }
+    internal string _blogPost = "";
+    [KernelFunction(Functions.GenerateBlogPostStep)]
+    public async Task<string> GenerateBlogPostAsync(string transcript, List<Chapter> chapters, ILogger logger, Action<VideoProcessingProgress> progressCallback, Kernel kernel, KernelProcessStepContext context)
+    {
+        void UpdateProgress(string status, int percentage, string currentOperation = "", string? error = null)
+        {
+            progressCallback?.Invoke(new VideoProcessingProgress
+            {
+                Status = status,
+                Percentage = percentage,
+                CurrentOperation = currentOperation,
+                Error = error
+            });
+        }
+        
+        UpdateProgress("Creating", 80, "Creating blog post");
+        
         // Using GPT-4o for content generation
-        var chatCompletion = _contentKernel.GetRequiredService<IChatCompletionService>();
+        var chatCompletion = kernel.GetRequiredService<IChatCompletionService>();
         var chat = new ChatHistory();
 
         chat.AddSystemMessage("You are a professional content writer that creates engaging blog posts from video transcripts.");
         chat.AddUserMessage($"Please create a blog post based on this transcript and chapters:\n\nTranscript:\n{transcript}\n\nChapters:\n{string.Join("\n", chapters.Select(c => $"{c.Title} ({c.StartTime:hh\\:mm\\:ss} - {c.EndTime:hh\\:mm\\:ss})"))}");
 
         var response = await chatCompletion.GetChatMessageContentAsync(chat);
-        return response.Content;
+        _blogPost = response.Content;
+        
+        await context.EmitEventAsync("BlogPostGenerated", _blogPost);
+        return _blogPost;
     }
+}
+
+// Final Step: Complete Processing
+public class CompletionStep : KernelProcessStep<VideoProcessingResponse>
+{
+    
+    internal VideoProcessingResponse? _state;
+    public override ValueTask ActivateAsync(KernelProcessStepState<VideoProcessingResponse> state)
+    {
+        _state = state.State;
+        return ValueTask.CompletedTask;
+    }
+    public static class Functions
+    {
+        public const string CompleteProcessing = nameof(CompleteProcessing);
+    }
+    [KernelFunction(Functions.CompleteProcessing)]
+    public async Task<VideoProcessingResponse> CompleteProcessingAsync(string transcript, KernelProcessStepContext context)
+    {
+        /* Clean up video file
+        if (!string.IsNullOrEmpty(videoPath) && File.Exists(videoPath))
+        {
+            try
+            {
+                File.Delete(videoPath);
+            }
+            catch
+            {
+                // Ignore cleanup errors
+            }
+        }*/
+        // Create the response object
+        this._state!.Status = "Completed";
+        this._state!.Transcript = transcript;
+        this._state!.Chapters = new List<Chapter>();
+        this._state!.BlogPost = "";
+        
+    
+        await context.EmitEventAsync("Completed", _state);
+        
+        return _state;
+    }
+}
+
+public class VideoProcessingService : IVideoProcessingService
+{
+    private readonly IConfiguration _configuration;
+    private readonly Kernel _kernel; // Single kernel for both chat and audio-to-text
+    private readonly ILogger<VideoProcessingService> _logger;
+    private Action<VideoProcessingProgress>? _progressCallback;
+
+    public VideoProcessingService(IConfiguration configuration, ILogger<VideoProcessingService> logger)
+    {
+        _configuration = configuration;
+        _logger = logger;
+
+        var builder = Kernel.CreateBuilder();
+        builder.AddAzureOpenAIChatCompletion(
+            _configuration["AzureOpenAI:ContentDeploymentName"]!,
+            _configuration["AzureOpenAI:Endpoint"]!,
+            _configuration["AzureOpenAI:ApiKey"]!);
+        #pragma warning disable SKEXP0010
+        builder.AddAzureOpenAIAudioToText(
+            _configuration["AzureOpenAI:WhisperDeploymentName"]!,
+            _configuration["AzureOpenAI:Endpoint"]!,
+            _configuration["AzureOpenAI:ApiKey"]!);
+        #pragma warning restore SKEXP0010
+        _kernel = builder.Build();
+    }
+
+    public void SetProgressCallback(Action<VideoProcessingProgress>? callback)
+    {
+        _progressCallback = callback;
+    }
+
+    public void UpdateProgress(string status, int percentage, string currentOperation = "", string? error = null)
+    {
+        if (_progressCallback != null)
+        {
+            var progress = new VideoProcessingProgress
+            {
+                Status = status,
+                Percentage = percentage,
+                CurrentOperation = currentOperation,
+                Error = error
+            };
+            _progressCallback(progress);
+        }
+    }
+
+    public async Task<VideoProcessingResponse> ProcessVideoAsync(VideoProcessingRequest request)
+    {
+        try
+        {
+            // Create a new Semantic Kernel process
+            #pragma warning disable SKEXP0080
+            ProcessBuilder processBuilder = new("VideoProcessingWorkflow");
+            
+            // Add the processing steps
+            var prepareVideoStep = processBuilder.AddStepFromType<PrepareVideoStep>();
+            var transcribeVideoStep = processBuilder.AddStepFromType<TranscribeVideoStep>();
+            //var generateChaptersStep = processBuilder.AddStepFromType<GenerateChaptersStep>();
+            //var generateBlogPostStep = processBuilder.AddStepFromType<GenerateBlogPostStep>();
+            var completionStep = processBuilder.AddStepFromType<CompletionStep>();
+            
+            
+            // Orchestrate the workflow
+            processBuilder
+                .OnInputEvent("Start")
+                .SendEventTo(new(prepareVideoStep, functionName: PrepareVideoStep.Functions.PrepareVideo,
+                    parameterName: "request"));
+
+            prepareVideoStep
+                .OnFunctionResult()
+                .SendEventTo(new ProcessFunctionTargetBuilder(transcribeVideoStep,
+                    functionName: TranscribeVideoStep.Functions.TranscribeVideo,
+                    parameterName: "videoPath"));
+            
+            transcribeVideoStep
+                .OnFunctionResult()
+                .SendEventTo(new ProcessFunctionTargetBuilder(completionStep,
+                    functionName: CompletionStep.Functions.CompleteProcessing,
+                    parameterName: "transcript"));
+            
+                
+            /*prepareVideoStep
+                .OnFunctionResult()
+                .SendEventTo(new(transcribeVideoStep, functionName: TranscribeVideoStep.Functions.TranscribeVideoStep, parameterName: "videoPath"))
+                .SendEventTo(new(transcribeVideoStep, functionName: TranscribeVideoStep.Functions.TranscribeVideoStep, parameterName: "logger"))
+                .SendEventTo(new(transcribeVideoStep, functionName: TranscribeVideoStep.Functions.TranscribeVideoStep, parameterName: "progressCallback"))
+                .SendEventTo(new(transcribeVideoStep, functionName: TranscribeVideoStep.Functions.TranscribeVideoStep, parameterName: "kernel"));
+                
+            transcribeVideoStep
+                .OnFunctionResult()
+                .SendEventTo(new(generateChaptersStep, functionName: GenerateChaptersStep.Functions.GenerateChaptersStep, parameterName: "transcript"))
+                .SendEventTo(new(generateChaptersStep, functionName: GenerateChaptersStep.Functions.GenerateChaptersStep, parameterName: "logger"))
+                .SendEventTo(new(generateChaptersStep, functionName: GenerateChaptersStep.Functions.GenerateChaptersStep, parameterName: "progressCallback"))
+                .SendEventTo(new(generateChaptersStep, functionName: GenerateChaptersStep.Functions.GenerateChaptersStep, parameterName: "kernel"));
+            
+            generateChaptersStep
+                .OnFunctionResult()
+                .SendEventTo(new(generateBlogPostStep, functionName: GenerateBlogPostStep.Functions.GenerateBlogPostStep, parameterName: "chapters"))
+                .SendEventTo(new(generateBlogPostStep, functionName: GenerateBlogPostStep.Functions.GenerateBlogPostStep, parameterName: "logger"))
+                .SendEventTo(new(generateBlogPostStep, functionName: GenerateBlogPostStep.Functions.GenerateBlogPostStep, parameterName: "progressCallback"))
+                .SendEventTo(new(generateBlogPostStep, functionName: GenerateBlogPostStep.Functions.GenerateBlogPostStep, parameterName: "kernel"));
+
+            generateBlogPostStep
+                .OnFunctionResult()
+                .SendEventTo(new(completionStep, functionName: CompletionStep.Functions.CompleteProcessing,
+                    parameterName: "blogPost"))
+                .SendEventTo(new(completionStep, functionName: CompletionStep.Functions.CompleteProcessing,
+                    parameterName: "transcript"))
+                .SendEventTo(new(completionStep, functionName: CompletionStep.Functions.CompleteProcessing,
+                    parameterName: "chapters"))
+                .SendEventTo(new(completionStep, functionName: CompletionStep.Functions.CompleteProcessing,
+                    parameterName: "videoPath"));
+            */;
+            
+            // Build the process
+            var process = processBuilder.Build();
+            
+            // Execute the workflow
+            ///var result = await process.InvokeAsync("Start", new Dictionary<string, object> { { "request", request } });
+            var initialResult = await process.StartAsync(_kernel, new KernelProcessEvent{Id = "Start", Data = request});
+            var finalState = await initialResult.GetStateAsync();
+            var finalCompletion = finalState.ToProcessStateMetadata();
+            // Get the final state of the process
+            //var completionStepState = finalState.Steps.Where(s => s.State.Name == "completionStep").FirstOrDefault()?.State as KernelProcessStepState<VideoProcessingResponse>;
+
+            //if (completion == null)
+            //{
+            //    throw new Exception("Failed to retrieve completion step state");
+            //}
+            return finalCompletion.StepsState["CompletionStep"].State as VideoProcessingResponse ?? throw new Exception("Failed to retrieve completion step state");
+
+#pragma warning restore SKEXP0080
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing video");
+            UpdateProgress("Error", 0, "Error occurred", ex.Message);
+            throw;
+        }
+    }
+
+    public async Task<string> TranscribeVideoAsync(string videoPath)
+    {
+        try{
+       #pragma warning disable SKEXP0080
+        ProcessBuilder processBuilder = new("VideoProcessingWorkflow");
+        var prepareVideoStep = processBuilder.AddStepFromType<PrepareVideoStep>();
+        var transcribeVideoStep = processBuilder.AddStepFromType<TranscribeVideoStep>();
+
+        prepareVideoStep
+                .OnEvent("VideoPrepared")
+                .SendEventTo(new(transcribeVideoStep, parameterName: "videoPath"))
+                .SendEventTo(new(transcribeVideoStep, parameterName: "logger"))
+                .SendEventTo(new(transcribeVideoStep, parameterName: "progressCallback"))
+                .SendEventTo(new(transcribeVideoStep, parameterName: "kernel"));
+
+        // Build the process
+        var process = processBuilder.Build();
+        
+        var initialResult = await process.StartAsync(_kernel, new KernelProcessEvent{Id = "VideoPrepared", Data = null});
+        var finalState = await initialResult.GetStateAsync();
+        var finalCompletion = finalState.ToProcessStateMetadata();
+        return (string)finalCompletion.State;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error transcribing video");
+            UpdateProgress("Error", 0, "Error occurred", ex.Message);
+            throw;
+        }
+    }
+
+    public async Task<List<Chapter>> GenerateChaptersAsync(string transcript)
+    {
+        try
+        {
+            #pragma warning disable SKEXP0080
+            ProcessBuilder processBuilder = new("VideoProcessingWorkflow");
+            var generateChaptersStep = processBuilder.AddStepFromType<GenerateChaptersStep>();
+
+            generateChaptersStep
+                .OnEvent("ChaptersGenerated")
+                .SendEventTo(new(generateChaptersStep, parameterName: "transcript"))
+                .SendEventTo(new(generateChaptersStep, parameterName: "logger"))
+                .SendEventTo(new(generateChaptersStep, parameterName: "progressCallback"))
+                .SendEventTo(new(generateChaptersStep, parameterName: "kernel"));
+
+            // Build the process
+            var process = processBuilder.Build();
+            
+            var initialResult = await process.StartAsync(_kernel, new KernelProcessEvent{Id = "ChaptersGenerated", Data = null});
+            var finalState = await initialResult.GetStateAsync();
+            var finalCompletion = finalState.ToProcessStateMetadata();
+            return (List<Chapter>)finalCompletion.State;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating chapters");
+            UpdateProgress("Error", 0, "Error occurred", ex.Message);
+            throw;
+        }
+    }
+    public async Task<string> GenerateBlogPostAsync(string transcript, List<Chapter> chapters)
+    {
+        try
+        {
+            #pragma warning disable SKEXP0080
+            ProcessBuilder processBuilder = new("VideoProcessingWorkflow");
+            var generateBlogPostStep = processBuilder.AddStepFromType<GenerateBlogPostStep>();
+
+            generateBlogPostStep
+                .OnEvent("BlogPostGenerated")
+                .SendEventTo(new(generateBlogPostStep, parameterName: "transcript"))
+                .SendEventTo(new(generateBlogPostStep, parameterName: "chapters"))
+                .SendEventTo(new(generateBlogPostStep, parameterName: "logger"))
+                .SendEventTo(new(generateBlogPostStep, parameterName: "progressCallback"))
+                .SendEventTo(new(generateBlogPostStep, parameterName: "kernel"));
+
+            // Build the process
+            var process = processBuilder.Build();
+            
+            var initialResult = await process.StartAsync(_kernel, new KernelProcessEvent{Id = "BlogPostGenerated", Data = null});
+            var finalState = await initialResult.GetStateAsync();
+            var finalCompletion = finalState.ToProcessStateMetadata();
+            return (string)finalCompletion.State;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating blog post");
+            UpdateProgress("Error", 0, "Error occurred", ex.Message);
+            throw;
+        }
+    }
+    #pragma warning restore SKEXP0080
+    
+    
 }
