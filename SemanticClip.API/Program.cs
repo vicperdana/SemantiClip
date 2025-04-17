@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using SemanticClip.Core.Services;
 using SemanticClip.Services;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Builder;
+using SemanticClip.Services.Steps;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,6 +50,12 @@ builder.Services.AddCors(options =>
 
 // Register services
 builder.Services.AddScoped<IVideoProcessingService, VideoProcessingService>();
+
+// Register all the Semantic Kernel process steps
+builder.Services.AddTransient<TranscribeVideoStep>();
+builder.Services.AddTransient<PrepareVideoStep>();
+builder.Services.AddTransient<CompletionStep>();
+builder.Services.AddTransient<GenerateBlogPostStep>();
 
 var app = builder.Build();
 

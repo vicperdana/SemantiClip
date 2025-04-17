@@ -7,40 +7,44 @@ using SemanticClip.Core.Models;
 namespace SemanticClip.Services.Steps;
 
 #pragma warning disable SKEXP0080
-public class GenerateBlogPostStep : KernelProcessStep
+public class GenerateBlogPostStep : KernelProcessStep<VideoProcessingResponse>
 {   
+    
     public static class Functions
     {
-        public const string GenerateBlogPostStep = nameof(GenerateBlogPostStep);
+        public const string GenerateBlogPost = nameof(GenerateBlogPost);
     }
-    internal string _blogPost = "";
-
-    [KernelFunction(Functions.GenerateBlogPostStep)]
-    public async Task<string> GenerateBlogPostAsync(string transcript, List<Chapter> chapters, ILogger logger, Action<VideoProcessingProgress> progressCallback, Kernel kernel, KernelProcessStepContext context)
+    
+    public override ValueTask ActivateAsync(KernelProcessStepState<VideoProcessingResponse> state)
     {
-        void UpdateProgress(string status, int percentage, string currentOperation = "", string? error = null)
-        {
-            progressCallback?.Invoke(new VideoProcessingProgress
-            {
-                Status = status,
-                Percentage = percentage,
-                CurrentOperation = currentOperation,
-                Error = error
-            });
-        }
-        
-        UpdateProgress("Creating", 80, "Creating blog post");
-        
+        _state = state.State;
+        return ValueTask.CompletedTask;
+    }
+
+    internal VideoProcessingResponse? _state;
+    ILogger _logger = new LoggerFactory().CreateLogger<GenerateBlogPostStep>();
+
+    [KernelFunction(Functions.GenerateBlogPost)]
+    public async Task<VideoProcessingResponse> GenerateBlogPostAsync(string transcript, Kernel kernel, KernelProcessStepContext context)
+    {
+        _logger.LogInformation("Generating blog post from transcript: {Transcript}", transcript);
         var chatCompletion = kernel.GetRequiredService<IChatCompletionService>();
         var chat = new ChatHistory();
 
         chat.AddSystemMessage("You are a professional content writer that creates engaging blog posts from video transcripts.");
-        chat.AddUserMessage($"Please create a blog post based on this transcript and chapters:\n\nTranscript:\n{transcript}\n\nChapters:\n{string.Join("\n", chapters.Select(c => $"{c.Title} ({c.StartTime:hh\\:mm\\:ss} - {c.EndTime:hh\\:mm\\:ss})"))}");
+        chat.AddUserMessage($"Please create a blog post based on this transcript:\n\nTranscript:\n{transcript}\n");
 
         var response = await chatCompletion.GetChatMessageContentAsync(chat);
-        _blogPost = response.Content;
+        var blogPost = response.Content;
+        _logger.LogInformation("Generated blog post: {BlogPost}", blogPost);
         
-        await context.EmitEventAsync("BlogPostGenerated", _blogPost);
-        return _blogPost;
+        // Create the response object
+        this._state!.Status = "Completed";
+        this._state!.Transcript = transcript;
+        this._state!.BlogPost = blogPost;
+        
+        await context.EmitEventAsync("Completed", _state);
+        
+        return _state;
     }
 } 

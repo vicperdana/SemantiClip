@@ -10,12 +10,7 @@ namespace SemanticClip.Services.Steps;
 public class TranscribeVideoStep : KernelProcessStep
 {
     private string _transcript = "";
-    private readonly ILogger _logger;
-
-    public TranscribeVideoStep(ILogger<TranscribeVideoStep> logger)
-    {
-        _logger = logger;
-    }
+    private ILogger _logger = new LoggerFactory().CreateLogger<TranscribeVideoStep>();
 
     public static class Functions
     {
@@ -96,7 +91,6 @@ public class TranscribeVideoStep : KernelProcessStep
             
             AudioContent audioContent = new(audioFileBinaryData, mimeType: null);
             #pragma warning restore SKEXP0001
-            
             var result = await audioToTextService.GetTextContentAsync(audioContent);
             _logger.LogInformation("Transcription completed successfully");
             

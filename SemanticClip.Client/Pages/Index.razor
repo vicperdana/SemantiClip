@@ -65,19 +65,6 @@
             </MudPaper>
         }
 
-        @if (response?.Chapters?.Any() == true)
-        {
-            <MudPaper Class="pa-4 mt-4">
-                <MudText Typo="Typo.h6" Class="mb-2">Chapters</MudText>
-                <MudList T="Chapter">
-                    @foreach (var chapter in response.Chapters)
-                    {
-                        <MudListItem T="Chapter" Text="@($"{chapter.Title} ({chapter.StartTime:hh\\:mm\\:ss} - {chapter.EndTime:hh\\:mm\\:ss})")" />
-                    }
-                </MudList>
-            </MudPaper>
-        }
-
         @if (!string.IsNullOrEmpty(response?.BlogPost))
         {
             <MudPaper Class="pa-4 mt-4">
