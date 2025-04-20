@@ -1,5 +1,7 @@
 using System.ComponentModel;
+using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
 using SemanticClip.Core.Models;
 
 namespace SemanticClip.Services.Plugins;
@@ -7,7 +9,7 @@ namespace SemanticClip.Services.Plugins;
 public sealed class BlogPostPlugin
 {
     private readonly ILogger _logger;
-
+    
     public BlogPostPlugin(ILogger logger)
     {
         _logger = logger;

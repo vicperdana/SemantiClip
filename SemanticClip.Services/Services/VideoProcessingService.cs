@@ -148,36 +148,7 @@ public class VideoProcessingService : IVideoProcessingService
         }
     }
 
-    /*public async Task<List<Chapter>> GenerateChaptersAsync(string transcript)
-    {
-        try
-        {
-            #pragma warning disable SKEXP0080
-            ProcessBuilder processBuilder = new("VideoProcessingWorkflow");
-            var generateChaptersStep = processBuilder.AddStepFromType<GenerateChaptersStep>();
-
-            generateChaptersStep
-                .OnEvent("ChaptersGenerated")
-                .SendEventTo(new(generateChaptersStep, parameterName: "transcript"))
-                .SendEventTo(new(generateChaptersStep, parameterName: "logger"))
-                .SendEventTo(new(generateChaptersStep, parameterName: "progressCallback"))
-                .SendEventTo(new(generateChaptersStep, parameterName: "kernel"));
-
-            // Build the process
-            var process = processBuilder.Build();
-            
-            var initialResult = await process.StartAsync(_kernel, new KernelProcessEvent{Id = "ChaptersGenerated", Data = null});
-            var finalState = await initialResult.GetStateAsync();
-            var finalCompletion = finalState.ToProcessStateMetadata();
-            return (List<Chapter>)finalCompletion.State;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error generating chapters");
-            UpdateProgress("Error", 0, "Error occurred", ex.Message);
-            throw;
-        }
-    }*/
+    
     public async Task<string> GenerateBlogPostAsync(string transcript, List<Chapter> chapters)
     {
         try

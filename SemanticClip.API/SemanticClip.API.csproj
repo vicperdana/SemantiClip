@@ -12,6 +12,8 @@
     <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.43.0" />
     <PackageReference Include="Microsoft.SemanticKernel" Version="1.46.0" />
     <PackageReference Include="Microsoft.SemanticKernel.Abstractions" Version="1.46.0" />
+    <PackageReference Include="Microsoft.SemanticKernel.Agents.Abstractions" Version="1.46.0" />
+    <PackageReference Include="Microsoft.SemanticKernel.Agents.Core" Version="1.46.0" />
     <PackageReference Include="Microsoft.SemanticKernel.Core" Version="1.46.0" />
     <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.46.0" />
     <PackageReference Include="Microsoft.SemanticKernel.Process.LocalRuntime" Version="1.46.0-alpha" />
