@@ -1,10 +1,10 @@
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Agents;
 using Microsoft.SemanticKernel.ChatCompletion;
 using SemanticClip.Core.Models;
 using SemanticClip.Services.Plugins;
+using SemanticClip.Services.Utils;
 
 namespace SemanticClip.Services.Steps;
 
@@ -39,6 +39,26 @@ public class GenerateBlogPostStep : KernelProcessStep<VideoProcessingResponse>
         return agent;
     }
     
+    
+    private ChatCompletionAgent UseTemplateForChatCompletionAgent(
+        Kernel kernel, string transcript)
+    {
+        string generateBlogPostYaml = EmbeddedResource.Read("GenerateBlogPost.yaml");
+        PromptTemplateConfig templateConfig = KernelFunctionYaml.ToPromptTemplateConfig(generateBlogPostYaml);
+        KernelPromptTemplateFactory templateFactory = new();
+        
+        ChatCompletionAgent agent = new(templateConfig, templateFactory)
+        {
+            Kernel = kernel,
+            Arguments = new()
+            {
+                { "transcript", transcript }
+            }
+         };
+
+        return agent;
+    }
+    
     public static class Functions
     {
         public const string GenerateBlogPost = nameof(GenerateBlogPost);
@@ -49,16 +69,26 @@ public class GenerateBlogPostStep : KernelProcessStep<VideoProcessingResponse>
     {
         _logger.LogInformation("Starting blog post generation process");
         
-        // Create the blog post plugin directly
+        /* METHOD 1 with a plugin
+        
+        //Create the blog post plugin
         var blogPostPlugin = new BlogPostPlugin(_logger);
         var plugin = KernelPluginFactory.CreateFromObject(blogPostPlugin);
 
-        // Create the agent
+        //Create the agent
         var agent = CreateAgentWithPlugin(
             kernel: kernel,
             plugin: plugin,
             instructions: "Generate a blog post from the provided video transcript.",
             name: "BlogPostGenerator");
+        */
+        
+        // METHOD 2 with a template
+        
+        //Create the agent with template
+        var agent = UseTemplateForChatCompletionAgent(
+            kernel: kernel,
+            transcript: transcript);
 
         // Create the chat history thread
         var thread = new ChatHistoryAgentThread();

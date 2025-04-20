@@ -1,6 +1,6 @@
 name: GenerateBlogPost
 template: |
-  Generate a blog post from the following video transcript:
+  Generate a blog post from the following video transcript formatted in markdown, make sure the markdown is valid and well-structured:
   {{$transcript}}
 template_format: semantic-kernel
 description: A function that generates a blog post from a video transcript.
@@ -12,4 +12,5 @@ output_variable:
   description: The generated blog post.
 execution_settings:
   default:
-    temperature: 0.7 
+    function_choice_behavior:
+      type: auto

@@ -13,6 +13,7 @@
     <PackageReference Include="Microsoft.SemanticKernel.Agents.Abstractions" Version="1.46.0" />
     <PackageReference Include="Microsoft.SemanticKernel.Agents.Core" Version="1.46.0" />
     <PackageReference Include="MudBlazor" Version="8.5.1" />
+    <PackageReference Include="MudBlazor.Markdown" Version="8.5.1" />
   </ItemGroup>
 
   <ItemGroup>
