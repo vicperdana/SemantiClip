@@ -3,15 +3,16 @@ using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.AudioToText;
 using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Agents.AzureAI;
 using SemanticClip.Core.Models;
 using SemanticClip.Core.Services;
 using SemanticClip.Services.Steps;
-using YoutubeExplode;
-using YoutubeExplode.Videos.Streams;
+using SemanticClip.Services.Utilities;
 using System.Text;
 using AngleSharp.Common;
+using Azure.AI.Projects;
+using Azure.Identity;
 using Microsoft.SemanticKernel.Process;
-using YoutubeExplode.Videos;
 
 namespace SemanticClip.Services;
 
@@ -29,6 +30,7 @@ public class VideoProcessingService : IVideoProcessingService
         _configuration = configuration;
         _logger = logger;
 
+        // Create the kernel
         var builder = Kernel.CreateBuilder();
         builder.AddAzureOpenAIChatCompletion(
             _configuration["AzureOpenAI:ContentDeploymentName"]!,
@@ -41,6 +43,13 @@ public class VideoProcessingService : IVideoProcessingService
             _configuration["AzureOpenAI:ApiKey"]!);
         #pragma warning restore SKEXP0010
         _kernel = builder.Build();
+
+        // Create the agents client
+        AzureAIAgentConfig.ConnectionString = _configuration["AzureAIAgent:ConnectionString"]!;
+        AzureAIAgentConfig.ChatModelId = _configuration["AzureAIAgent:ChatModelId"]!;
+        AzureAIAgentConfig.VectorStoreId = _configuration["AzureAIAgent:VectorStoreId"]!;
+        AzureAIAgentConfig.MaxEvaluations = int.Parse(_configuration["AzureAIAgent:MaxEvaluations"]!);
+        
     }
 
     public void SetProgressCallback(Action<VideoProcessingProgress>? callback)
@@ -75,6 +84,7 @@ public class VideoProcessingService : IVideoProcessingService
             var prepareVideoStep = processBuilder.AddStepFromType<PrepareVideoStep>();
             var transcribeVideoStep = processBuilder.AddStepFromType<TranscribeVideoStep>();
             var generateBlogPostStep = processBuilder.AddStepFromType<GenerateBlogPostStep>();
+            var evaluateBlogPostStep = processBuilder.AddStepFromType<EvaluateBlogPostStep>();
             //var completionStep = processBuilder.AddStepFromType<CompletionStep>();
             
             
@@ -95,8 +105,26 @@ public class VideoProcessingService : IVideoProcessingService
                 .SendEventTo(new ProcessFunctionTargetBuilder(generateBlogPostStep,
                     functionName: GenerateBlogPostStep.Functions.GenerateBlogPost,
                     parameterName: "transcript"));
+
+            generateBlogPostStep
+                .OnFunctionResult()
+                .SendEventTo(new ProcessFunctionTargetBuilder(evaluateBlogPostStep,
+                    functionName: EvaluateBlogPostStep.Functions.EvaluateBlogPost,
+                    parameterName: "blogstate"));
+            
+            /*evaluateBlogPostStep
+                .OnEvent("Completed")
+                .StopProcess();
+
+            evaluateBlogPostStep
+                .OnFunctionResult()
+                .SendEventTo(new ProcessFunctionTargetBuilder(evaluateBlogPostStep,
+                    functionName: EvaluateBlogPostStep.Functions.EvaluateBlogPost,
+                    parameterName: "state"));*/
+                
                 
             
+
             // Build the process
             var process = processBuilder.Build();
             
@@ -105,7 +133,9 @@ public class VideoProcessingService : IVideoProcessingService
             var finalState = await initialResult.GetStateAsync();
             var finalCompletion = finalState.ToProcessStateMetadata();
             // Get the final state of the process
-            return finalCompletion.StepsState["GenerateBlogPostStep"].State as VideoProcessingResponse ?? throw new Exception("Failed to retrieve completion step state");
+            VideoProcessingResponse videoProcessingResponse = finalCompletion.StepsState["EvaluateBlogPostStep"].State as VideoProcessingResponse ?? throw new Exception("Failed to retrieve completion step state");
+                
+            return videoProcessingResponse;
 
 #pragma warning restore SKEXP0080
         }
@@ -160,7 +190,6 @@ public class VideoProcessingService : IVideoProcessingService
             generateBlogPostStep
                 .OnEvent("BlogPostGenerated")
                 .SendEventTo(new(generateBlogPostStep, parameterName: "transcript"))
-                .SendEventTo(new(generateBlogPostStep, parameterName: "chapters"))
                 .SendEventTo(new(generateBlogPostStep, parameterName: "logger"))
                 .SendEventTo(new(generateBlogPostStep, parameterName: "progressCallback"))
                 .SendEventTo(new(generateBlogPostStep, parameterName: "kernel"));

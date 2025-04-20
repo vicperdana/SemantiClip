@@ -86,7 +86,7 @@ public class VideoProcessingApiClient
         return await response.Content.ReadAsStringAsync();
     }
 
-    public async Task ProcessVideoAsync(string youtubeUrl, IBrowserFile? videoFile, Func<VideoProcessingProgress, Task>? progressCallback = null)
+     public async Task ProcessVideoAsync(string youtubeUrl, IBrowserFile? videoFile, Func<VideoProcessingProgress, Task>? progressCallback = null)
     {
         ClientWebSocket? webSocket = null;
         try

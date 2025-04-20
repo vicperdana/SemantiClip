@@ -66,6 +66,7 @@ builder.Services.AddLogging(loggingBuilder =>
 builder.Services.AddTransient<PrepareVideoStep>();
 builder.Services.AddTransient<TranscribeVideoStep>();
 builder.Services.AddTransient<GenerateBlogPostStep>();
+builder.Services.AddTransient<EvaluateBlogPostStep>();
 
 // Register BlogPostPlugin with proper logger
 builder.Services.AddTransient<BlogPostPlugin>(sp => 

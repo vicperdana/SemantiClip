@@ -3,23 +3,16 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Agents;
 using Microsoft.SemanticKernel.ChatCompletion;
 using SemanticClip.Core.Models;
-using SemanticClip.Services.Plugins;
 using SemanticClip.Services.Utils;
 
 namespace SemanticClip.Services.Steps;
 
 #pragma warning disable SKEXP0080
-public class GenerateBlogPostStep : KernelProcessStep<VideoProcessingResponse>
+public class GenerateBlogPostStep : KernelProcessStep<BlogPostProcessingResponse>
 {
     ILogger<GenerateBlogPostStep> _logger = new LoggerFactory().CreateLogger<GenerateBlogPostStep>();
-    private VideoProcessingResponse? _state;
+    private BlogPostProcessingResponse? _state = new BlogPostProcessingResponse();
     
-
-    public override ValueTask ActivateAsync(KernelProcessStepState<VideoProcessingResponse> state)
-    {
-        _state = state.State;
-        return ValueTask.CompletedTask;
-    }
 
     private ChatCompletionAgent CreateAgentWithPlugin(
         Kernel kernel,
@@ -65,7 +58,7 @@ public class GenerateBlogPostStep : KernelProcessStep<VideoProcessingResponse>
     }
 
     [KernelFunction(Functions.GenerateBlogPost)]
-    public async Task<VideoProcessingResponse> GenerateBlogPostAsync(string transcript, Kernel kernel, KernelProcessStepContext context)
+    public async Task<BlogPostProcessingResponse> GenerateBlogPostAsync(string transcript, Kernel kernel, KernelProcessStepContext context)
     {
         _logger.LogInformation("Starting blog post generation process");
         
@@ -84,8 +77,7 @@ public class GenerateBlogPostStep : KernelProcessStep<VideoProcessingResponse>
         */
         
         // METHOD 2 with a template
-        
-        //Create the agent with template
+        //Create the agent with a template
         var agent = UseTemplateForChatCompletionAgent(
             kernel: kernel,
             transcript: transcript);
@@ -97,11 +89,13 @@ public class GenerateBlogPostStep : KernelProcessStep<VideoProcessingResponse>
         var result = await InvokeAgentAsync(agent, thread, transcript);
         
         // Update the state with the generated blog post
-        _state!.Status = "Completed";
-        _state!.Transcript = transcript;
-        _state!.BlogPost = result;
-        
-        await context.EmitEventAsync("Completed", _state);
+        VideoProcessingResponse videoProcessingResponse = new VideoProcessingResponse
+        {
+            Transcript = transcript,
+            BlogPost = result
+        };
+        _state!.BlogPosts.Add(result);
+        _state!.VideoProcessingResponse = videoProcessingResponse;
         
         return _state;
     }
