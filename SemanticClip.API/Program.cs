@@ -52,9 +52,8 @@ builder.Services.AddCors(options =>
 builder.Services.AddScoped<IVideoProcessingService, VideoProcessingService>();
 
 // Register all the Semantic Kernel process steps
-builder.Services.AddTransient<TranscribeVideoStep>();
 builder.Services.AddTransient<PrepareVideoStep>();
-builder.Services.AddTransient<CompletionStep>();
+builder.Services.AddTransient<TranscribeVideoStep>();
 builder.Services.AddTransient<GenerateBlogPostStep>();
 
 var app = builder.Build();
