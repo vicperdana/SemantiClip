@@ -1,18 +1,10 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.AudioToText;
-using Microsoft.SemanticKernel.ChatCompletion;
-using Microsoft.SemanticKernel.Agents.AzureAI;
 using SemanticClip.Core.Models;
 using SemanticClip.Core.Services;
 using SemanticClip.Services.Steps;
 using SemanticClip.Services.Utilities;
-using System.Text;
-using AngleSharp.Common;
-using Azure.AI.Projects;
-using Azure.Identity;
-using Microsoft.SemanticKernel.Process;
 
 namespace SemanticClip.Services;
 
@@ -32,10 +24,21 @@ public class VideoProcessingService : IVideoProcessingService
 
         // Create the kernel
         var builder = Kernel.CreateBuilder();
+        
+        /* Use Azure OpenAI for chat completion
         builder.AddAzureOpenAIChatCompletion(
             _configuration["AzureOpenAI:ContentDeploymentName"]!,
             _configuration["AzureOpenAI:Endpoint"]!,
-            _configuration["AzureOpenAI:ApiKey"]!);
+            _configuration["AzureOpenAI:ApiKey"]!);*/
+        
+        // Use local SLM for chat completion
+#pragma warning disable SKEXP0070
+        builder.AddOllamaChatCompletion(
+            modelId: _configuration["LocalSLM:ModelId"]!,
+            endpoint: new Uri(_configuration["LocalSLM:Endpoint"]!)
+        );
+        #pragma warning restore SKEXP0070
+        
         #pragma warning disable SKEXP0010
         builder.AddAzureOpenAIAudioToText(
             _configuration["AzureOpenAI:WhisperDeploymentName"]!,
@@ -44,7 +47,7 @@ public class VideoProcessingService : IVideoProcessingService
         #pragma warning restore SKEXP0010
         _kernel = builder.Build();
 
-        // Create the agents client
+        // Create the agents client for Azure AI Agent
         AzureAIAgentConfig.ConnectionString = _configuration["AzureAIAgent:ConnectionString"]!;
         AzureAIAgentConfig.ChatModelId = _configuration["AzureAIAgent:ChatModelId"]!;
         AzureAIAgentConfig.VectorStoreId = _configuration["AzureAIAgent:VectorStoreId"]!;
@@ -112,19 +115,6 @@ public class VideoProcessingService : IVideoProcessingService
                     functionName: EvaluateBlogPostStep.Functions.EvaluateBlogPost,
                     parameterName: "blogstate"));
             
-            /*evaluateBlogPostStep
-                .OnEvent("Completed")
-                .StopProcess();
-
-            evaluateBlogPostStep
-                .OnFunctionResult()
-                .SendEventTo(new ProcessFunctionTargetBuilder(evaluateBlogPostStep,
-                    functionName: EvaluateBlogPostStep.Functions.EvaluateBlogPost,
-                    parameterName: "state"));*/
-                
-                
-            
-
             // Build the process
             var process = processBuilder.Build();
             

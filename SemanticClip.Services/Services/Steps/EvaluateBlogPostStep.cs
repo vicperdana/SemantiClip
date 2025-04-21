@@ -66,14 +66,15 @@ public class EvaluateBlogPostStep : KernelProcessStep<VideoProcessingResponse>
         public const string EvaluateBlogPost = nameof(EvaluateBlogPost);
     }
 
+    // Create the agent with a template and pass the latest evaluated blog post as the input
+
     [KernelFunction(Functions.EvaluateBlogPost)]
     public async Task<VideoProcessingResponse> EvaluateBlogPostAsync(BlogPostProcessingResponse blogstate, Kernel kernel, KernelProcessStepContext context)
     {
         _logger.LogInformation("Starting blog post evaluation process");
         BlogPostProcessingResponse _blogstate = blogstate;
 
-        // Create the agent with a template and pass the latest evaluated blog post as the input
-   
+      
         // Create the Azure AI agent client
 
         AIProjectClient client =

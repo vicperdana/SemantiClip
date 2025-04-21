@@ -6,6 +6,7 @@ template: |
   3. Engagement: Enhance writing style, readability, and reader engagement
   4. SEO: Optimize content with relevant keywords while maintaining natural flow
   5. Overall Improvement: Incorporate best practices for blog writing
+  6. Markdown Formatting: Ensure the output is well-structured in markdown format, heading must be formatted correctly with ## H2, and lists must be formatted with - or *.
 
   Original Blog Post:
   {{$blogPost}}

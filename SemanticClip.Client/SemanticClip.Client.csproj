@@ -10,8 +10,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.4" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.4" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.SemanticKernel.Agents.Abstractions" Version="1.46.0" />
-    <PackageReference Include="Microsoft.SemanticKernel.Agents.Core" Version="1.46.0" />
+    <PackageReference Include="Microsoft.SemanticKernel.Agents.Abstractions" Version="1.47.0" />
+    <PackageReference Include="Microsoft.SemanticKernel.Agents.Core" Version="1.47.0" />
     <PackageReference Include="MudBlazor" Version="8.5.1" />
     <PackageReference Include="MudBlazor.Markdown" Version="8.5.1" />
   </ItemGroup>

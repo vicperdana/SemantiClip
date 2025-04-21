@@ -13,7 +13,7 @@ public class GenerateBlogPostStep : KernelProcessStep<BlogPostProcessingResponse
     ILogger<GenerateBlogPostStep> _logger = new LoggerFactory().CreateLogger<GenerateBlogPostStep>();
     private BlogPostProcessingResponse? _state = new BlogPostProcessingResponse();
     
-
+    // Alternative method to create the agent with a plugin
     private ChatCompletionAgent CreateAgentWithPlugin(
         Kernel kernel,
         KernelPlugin plugin,

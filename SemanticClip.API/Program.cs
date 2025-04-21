@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Builder;
 using SemanticClip.Services.Plugins;
 using SemanticClip.Services.Steps;
 using Microsoft.Extensions.Logging;
-using SemanticClip.Services.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -76,7 +75,7 @@ builder.Services.AddTransient<BlogPostPlugin>(sp =>
 });
 
 // Register KernelService
-builder.Services.AddScoped<IKernelService, KernelService>();
+//builder.Services.AddScoped<IKernelService, KernelService>();
 
 var app = builder.Build();
 
