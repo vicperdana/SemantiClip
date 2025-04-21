@@ -130,11 +130,14 @@ SemanticClip is designed to help content creators and educators by automating th
 - [x] Implement FFmpeg for better audio extraction
 - [x] Use specialized models for different tasks
 - [ ] Add support for multiple video formats
-- [ ] Implement batch processing
 - [ ] Add export options (PDF, Word, etc.)
 - [ ] Add support for multiple languages
 - [ ] Implement user authentication
 - [ ] Run using dotnet aspire
+- [ ] Add unit tests and integration tests
+- [ ] Improve UI/UX with MudBlazor components
+- [ ] Optimize performance for large video files
+- [ ] Update documentation and examples
 
 ## Contributing
 
