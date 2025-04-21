@@ -1,6 +1,6 @@
 # SemantiClip
 
-![SemantiClip Logo](/docs/images/SemanticClipLogo.png)
+![SemantiClip Logo](/docs/images/SemantiClipLogo.png)
 
 > **Note**: This is a proof of concept application and is not intended for production use. It demonstrates the integration of various AI technologies for video processing and content generation.
 
