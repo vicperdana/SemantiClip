@@ -1,6 +1,8 @@
 # SemantiClip
 
-![SemantiClip Logo](/docs/images/SemantiClipLogo.png)
+<p align="center">
+  <img src="/docs/images/SemantiClipLogo.png" alt="SemantiClip Logo">
+</p>
 
 > **Note**: This is a proof of concept application and is not intended for production use. It demonstrates the integration of various AI technologies for video processing and content generation.
 
