@@ -2,11 +2,8 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using SemanticClip.Core.Services;
 using SemanticClip.Services;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Builder;
 using SemanticClip.Services.Plugins;
 using SemanticClip.Services.Steps;
-using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 

@@ -122,9 +122,12 @@ public class VideoProcessingService : IVideoProcessingService
             var initialResult = await process.StartAsync(_kernel, new KernelProcessEvent{Id = "Start", Data = request});
             var finalState = await initialResult.GetStateAsync();
             var finalCompletion = finalState.ToProcessStateMetadata();
-            // Get the final state of the process
-            VideoProcessingResponse videoProcessingResponse = finalCompletion.StepsState["EvaluateBlogPostStep"].State as VideoProcessingResponse ?? throw new Exception("Failed to retrieve completion step state");
-                
+            
+            if (finalCompletion.StepsState!["EvaluateBlogPostStep"].State is not VideoProcessingResponse videoProcessingResponse)
+            {
+                throw new InvalidOperationException("Failed to retrieve completion step state");
+            }
+            
             return videoProcessingResponse;
 
 #pragma warning restore SKEXP0080
@@ -158,7 +161,13 @@ public class VideoProcessingService : IVideoProcessingService
         var initialResult = await process.StartAsync(_kernel, new KernelProcessEvent{Id = "VideoPrepared", Data = null});
         var finalState = await initialResult.GetStateAsync();
         var finalCompletion = finalState.ToProcessStateMetadata();
-        return (string)finalCompletion.State;
+        
+        if (finalCompletion.State is not string transcript)
+        {
+            throw new InvalidOperationException("Failed to transcribe video: Invalid state returned from process");
+        }
+        
+        return transcript;
         }
         catch (Exception ex)
         {
@@ -190,7 +199,13 @@ public class VideoProcessingService : IVideoProcessingService
             var initialResult = await process.StartAsync(_kernel, new KernelProcessEvent{Id = "BlogPostGenerated", Data = null});
             var finalState = await initialResult.GetStateAsync();
             var finalCompletion = finalState.ToProcessStateMetadata();
-            return (string)finalCompletion.State;
+            
+            if (finalCompletion.State is not string blogPost)
+            {
+                throw new InvalidOperationException("Failed to generate blog post: Invalid state returned from process");
+            }
+            
+            return blogPost;
         }
         catch (Exception ex)
         {

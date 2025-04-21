@@ -28,6 +28,10 @@
                                         StartIcon="@Icons.Material.Filled.AttachFile" />
                             </ActivatorContent>
                         </MudFileUpload>
+                        @if (videoFile != null)
+                        {
+                            <MudText Class="mt-2">Selected file: @videoFile.Name</MudText>
+                        }
                     </MudForm>
 
                     <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@ProcessVideo" Disabled="@isProcessing" Class="mt-4">

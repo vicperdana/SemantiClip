@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.4" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.4" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.4" />
     <PackageReference Include="Microsoft.SemanticKernel" Version="1.47.0" />
     <PackageReference Include="Microsoft.SemanticKernel.Abstractions" Version="1.47.0" />
@@ -26,12 +27,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SemanticClip.Core\SemanticClip.Core.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="Microsoft.Extensions.Logging">
-      <HintPath>..\..\..\..\..\..\usr\local\share\dotnet\shared\Microsoft.AspNetCore.App\9.0.4\Microsoft.Extensions.Logging.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
   <ItemGroup>

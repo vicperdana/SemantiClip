@@ -37,7 +37,7 @@ public sealed class BlogPostPlugin
         {
             Status = "Completed",
             Transcript = transcript,
-            BlogPost = blogPost
+            BlogPost = blogPost!
         };
     }
 } 

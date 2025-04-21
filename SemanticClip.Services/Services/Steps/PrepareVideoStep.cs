@@ -13,7 +13,7 @@ public class PrepareVideoStep : KernelProcessStep
     {
         public const string PrepareVideo = nameof(PrepareVideo);
     }
-    internal string _videoPath;
+    internal string? _videoPath;
 
     [KernelFunction(Functions.PrepareVideo)]
     public async Task<string> PrepareVideoAsync(VideoProcessingRequest request, KernelProcessStepContext context)

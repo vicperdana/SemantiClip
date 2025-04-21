@@ -30,7 +30,7 @@ public class EvaluateBlogPostStep : KernelProcessStep<VideoProcessingResponse>
     }
 
 #pragma warning disable SKEXP0110
-    private async Task<AzureAIAgent> UseTemplateForAzureAIAgent(
+    private async Task<AzureAIAgent> UseTemplateForAzureAIAgentAsync(
         AgentsClient agentsClient, string blogPost)
     {
         string evaluateBlogPostYaml = EmbeddedResource.Read("EvaluateBlogPost.yaml");
@@ -81,7 +81,7 @@ public class EvaluateBlogPostStep : KernelProcessStep<VideoProcessingResponse>
             AzureAIAgent.CreateAzureAIClient(AzureAIAgentConfig.ConnectionString, new AzureCliCredential());
         AgentsClient agentsClient = client.GetAgentsClient();
 #pragma warning disable SKEXP0110
-        var agent = await UseTemplateForAzureAIAgent(
+        var agent = await UseTemplateForAzureAIAgentAsync(
             agentsClient: agentsClient,
             blogPost: _blogstate!.BlogPosts[_blogstate.UpdateIndex]);
 
@@ -98,7 +98,7 @@ public class EvaluateBlogPostStep : KernelProcessStep<VideoProcessingResponse>
             //this._state!.VideoProcessingResponse = _state.VideoProcessingResponse;
             //this._state!.UpdateIndex++;
             
-            this._state.BlogPost = evaluation;
+            this._state!.BlogPost = evaluation;
             this._state.Transcript = _blogstate.VideoProcessingResponse.Transcript;
             
             return this._state;

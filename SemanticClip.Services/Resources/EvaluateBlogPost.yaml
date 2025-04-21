@@ -11,7 +11,7 @@ template: |
   Original Blog Post:
   {{$blogPost}}
 
-  Please provide the improved version of the blog post, maintaining the same core message but enhancing it based on the above criteria. The output should be a complete, ready-to-publish blog post.
+  Please provide the improved version of the blog post, maintaining the same core message but enhancing it based on the above criteria. The output should be a complete, ready-to-publish blog post in a markdown format and nothing else.
 template_format: semantic-kernel
 description: A function that evaluates a blog post and generates an improved version based on content quality, relevance, engagement, and SEO criteria.
 input_variables:

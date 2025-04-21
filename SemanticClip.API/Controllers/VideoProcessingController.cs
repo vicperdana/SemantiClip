@@ -23,13 +23,13 @@ public class VideoProcessingController : ControllerBase
     }
 
     [HttpGet("process")]
-    public async Task ProcessVideoWebSocket()
+    public async Task ProcessVideoWebSocketAsync()
     {
         if (HttpContext.WebSockets.IsWebSocketRequest)
         {
             using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
             _logger.LogInformation("WebSocket connection established.");
-            await HandleWebSocketConnection(webSocket);
+            await HandleWebSocketConnectionAsync(webSocket);
         }
         else
         {
@@ -38,7 +38,7 @@ public class VideoProcessingController : ControllerBase
         }
     }
 
-    private async Task HandleWebSocketConnection(WebSocket webSocket)
+    private async Task HandleWebSocketConnectionAsync(WebSocket webSocket)
     {
         var buffer = new byte[32768]; // 32KB buffer
         var messageBuilder = new StringBuilder();
@@ -74,7 +74,7 @@ public class VideoProcessingController : ControllerBase
                             // Update progress
                             progress.Status = "Processing video...";
                             progress.Percentage = 10;
-                            await SendProgressUpdate(webSocket, progress);
+                            await SendProgressUpdateAsync(webSocket, progress);
 
                             // Process the video
                             var response = await _videoProcessingService.ProcessVideoAsync(request);
@@ -83,14 +83,14 @@ public class VideoProcessingController : ControllerBase
                             progress.Status = "Completed";
                             progress.Percentage = 100;
                             progress.Result = response;
-                            await SendProgressUpdate(webSocket, progress);
+                            await SendProgressUpdateAsync(webSocket, progress);
                         }
                         catch (JsonException ex)
                         {
                             _logger.LogError(ex, "Failed to deserialize request: {Message}", message);
                             progress.Status = "Error";
                             progress.Error = "Failed to process request";
-                            await SendProgressUpdate(webSocket, progress);
+                            await SendProgressUpdateAsync(webSocket, progress);
                             break;
                         }
                         catch (Exception ex)
@@ -98,7 +98,7 @@ public class VideoProcessingController : ControllerBase
                             _logger.LogError(ex, "Error processing video");
                             progress.Status = "Error";
                             progress.Error = ex.Message;
-                            await SendProgressUpdate(webSocket, progress);
+                            await SendProgressUpdateAsync(webSocket, progress);
                             break;
                         }
                     }
@@ -114,7 +114,7 @@ public class VideoProcessingController : ControllerBase
                 {
                     progress.Status = "Error";
                     progress.Error = ex.Message;
-                    await SendProgressUpdate(webSocket, progress);
+                    await SendProgressUpdateAsync(webSocket, progress);
                     await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, "Error occurred", CancellationToken.None);
                 }
                 catch (Exception closeEx)
@@ -140,14 +140,14 @@ public class VideoProcessingController : ControllerBase
         }
     }
 
-    private async Task SendProgressUpdate(WebSocket webSocket, VideoProcessingProgress progress)
+    private async Task SendProgressUpdateAsync(WebSocket webSocket, VideoProcessingProgress progress)
     {
         var message = JsonSerializer.Serialize(progress);
         var bytes = Encoding.UTF8.GetBytes(message);
         await webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
-   [HttpPost("transcribe")]
+   /*[HttpPost("transcribe")]
     public async Task<ActionResult<string>> TranscribeVideo(IFormFile videoFile)
     {
         string? tempFilePath = null;
@@ -184,5 +184,5 @@ public class VideoProcessingController : ControllerBase
                 }
             }
         }
-    }
+    }*/
 }

@@ -18,7 +18,7 @@ builder.Services.AddScoped(sp => new HttpClient {
 });
 
 // Add file upload configuration to client
-builder.Configuration.AddInMemoryCollection(new Dictionary<string, string>
+builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
 {
     { "FileUpload:MaxRequestBodySizeInBytes", "3000000" }
 });
