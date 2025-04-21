@@ -152,6 +152,6 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ## Contact
 
-Vic Perdana - [@vicperdana](https://twitter.com/vicperdana) - vic@vicperdana.com
+Vic Perdana - [@vicperdana](https://twitter.com/vicperdana) - [Contact me](https://github.com/vicperdana)
 
 Project Link: [https://github.com/vicperdana/SemantiClip](https://github.com/vicperdana/SemantiClip)
