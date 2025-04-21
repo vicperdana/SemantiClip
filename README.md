@@ -6,7 +6,8 @@
 
 > **Note**: This is a proof of concept application and is not intended for production use. It demonstrates the integration of various AI technologies for video processing and content generation.
 
-SemantiClip is a powerful application that processes videos by transcribing audio, generating chapters, and creating blog posts based on the content. It's built with .NET and Blazor WebAssembly, providing a modern and responsive user interface.
+**SemantiClip** is a powerful AI-driven tool that converts videos into structured content by transcribing audio, generating chapters, and creating blog posts. Built with .NET, Semantic Kernel and Blazor WebAssembly, it delivers a fast, modern, and responsive user experience.
+
 
 ## Table of Contents
 - [SemantiClip](#semanticlip)
@@ -24,17 +25,25 @@ SemantiClip is a powerful application that processes videos by transcribing audi
 
 ## About The Project
 
-SemanticClip is designed to help content creators and educators by automating the process of creating written content from video material. The application:
+**SemantiClip** is an AI-powered tool that transforms video content into structured written formats. Designed for content creators and educators, it automates transcription, chapter generation, and blog post creation—making it easier than ever to repurpose video content.
 
-- Extracts audio using FFmpeg
-- Transcribes audio content using Azure OpenAI Whisper
-- Generates chapter markers using GPT-4o for better content organization
-- Creates blog posts based on the transcript and chapters
-- Provides a modern web interface for easy interaction
+### Key Features
+
+- 🎙️ **Audio Extraction** – Uses FFmpeg to extract audio from video files.
+- ✍️ **Transcription** – Converts speech to text using Azure OpenAI Whisper.
+- 📝 **Blog Post Creation** – Automatically generates readable blog posts from transcripts.
+- 💻 **Modern Web UI** – Built with .NET 9, Blazor WebAssembly, and MudBlazor.
+- 🧩 **Local Content Generation** – Supports on-device LLM processing with Ollama.
+- 🔍 **Semantic Kernel Integration** – Utilizes Semantic Kernel Process and Agent frameworks for enhanced context and orchestration.
+
+SemantiClip helps you do more with your video content—faster, smarter, and effortlessly.
+
 
 ## Built With
 
 * [.NET 9](https://dotnet.microsoft.com/)
+* [Semantic Kernel Process Framework](https://learn.microsoft.com/en-us/semantic-kernel/frameworks/process/process-framework)
+* [Semantic Kernel Agent Framework](https://learn.microsoft.com/en-us/semantic-kernel/frameworks/agent/?pivots=programming-language-csharp)
 * [Blazor WebAssembly](https://dotnet.microsoft.com/apps/aspnet/web-apps/blazor)
 * [MudBlazor](https://mudblazor.com/) - UI Component Library
 * [Azure OpenAI](https://azure.microsoft.com/en-us/products/cognitive-services/openai-service)
