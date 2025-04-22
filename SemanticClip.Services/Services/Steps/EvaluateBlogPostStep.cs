@@ -93,11 +93,6 @@ public class EvaluateBlogPostStep : KernelProcessStep<VideoProcessingResponse>
         {
             var evaluation = await InvokeAgentAsync(agent, thread, _blogstate.BlogPosts[_blogstate.UpdateIndex]);
             
-            // Update the state with the evaluation
-            //this._state!.BlogPosts.Add(evaluation);
-            //this._state!.VideoProcessingResponse = _state.VideoProcessingResponse;
-            //this._state!.UpdateIndex++;
-            
             this._state!.BlogPost = evaluation;
             this._state.Transcript = _blogstate.VideoProcessingResponse.Transcript;
             

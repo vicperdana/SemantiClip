@@ -27,6 +27,10 @@
 
 **SemantiClip** is an AI-powered tool that transforms video content into structured written formats. Designed for content creators and educators, it automates transcription, chapter generation, and blog post creation—making it easier than ever to repurpose video content.
 
+<p align="center">
+  <img src="/docs/images/SemantiClip-Overview.png" alt="SemantiClip Overview">
+</p>
+
 ### Key Features
 
 - 🎙️ **Audio Extraction** – Uses FFmpeg to extract audio from video files.
@@ -140,13 +144,11 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
 - [x] Improve transcription quality with Whisper
 - [x] Implement FFmpeg for better audio extraction
 - [x] Use specialized models for different tasks
-- [ ] Add support for multiple video formats
+- [x] Add support for multiple video formats
 - [ ] Add export options (PDF, Word, etc.)
-- [ ] Add support for multiple languages
 - [ ] Implement user authentication
 - [ ] Run using dotnet aspire
 - [ ] Add unit tests and integration tests
-- [ ] Improve UI/UX with MudBlazor components
 - [ ] Optimize performance for large video files
 - [ ] Update documentation and examples
 

@@ -88,7 +88,6 @@ public class VideoProcessingService : IVideoProcessingService
             var transcribeVideoStep = processBuilder.AddStepFromType<TranscribeVideoStep>();
             var generateBlogPostStep = processBuilder.AddStepFromType<GenerateBlogPostStep>();
             var evaluateBlogPostStep = processBuilder.AddStepFromType<EvaluateBlogPostStep>();
-            //var completionStep = processBuilder.AddStepFromType<CompletionStep>();
             
             
             // Orchestrate the workflow
