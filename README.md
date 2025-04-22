@@ -133,6 +133,10 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
 
 ## Usage
 
+<p align="left">
+  <img src="/docs/images/SemantiClipUsage.gif" alt="SemantiClip Usage">
+</p>
+
 1. Open the application in your browser (default: http://localhost:5186)
 2. Upload a video file
 3. Click "Process Video"
@@ -168,6 +172,6 @@ Distributed under the GPLv3 License. See `LICENSE` for more information.
 
 ## Contact
 
-Vic Perdana - [@vicperdana](https://twitter.com/vicperdana) - [Contact me](https://github.com/vicperdana)
+Vic Perdana - [LinkedIn](https://www.linkedin.com/in/vperdana/) - [GitHub](https://github.com/vicperdana)
 
 Project Link: [https://github.com/vicperdana/SemantiClip](https://github.com/vicperdana/SemantiClip)
