@@ -6,7 +6,7 @@
 
 > **Note**: This is a proof of concept application and is not intended for production use. It demonstrates the integration of various AI technologies for video processing and content generation.
 
-**SemantiClip** is a powerful AI-driven tool that converts videos into structured content by transcribing audio, generating chapters, and creating blog posts. Built with .NET, Semantic Kernel and Blazor WebAssembly, it delivers a fast, modern, and responsive user experience.
+**SemantiClip** is a powerful AI-driven tool that converts videos into structured content by transcribing audio and creating blog posts. Built with .NET, Semantic Kernel and Blazor WebAssembly, it delivers a fast, modern, and responsive user experience.
 
 
 ## Table of Contents
@@ -25,7 +25,7 @@
 
 ## About The Project
 
-**SemantiClip** is an AI-powered tool that transforms video content into structured written formats. Designed for content creators and educators, it automates transcription, chapter generation, and blog post creation—making it easier than ever to repurpose video content.
+**SemantiClip** is an AI-powered tool that transforms video content into structured written formats. Designed for content creators and educators, it automates transcription and blog post creation—making it easier than ever to repurpose video content.
 
 <p align="center">
   <img src="/docs/images/SemantiClip-Overview.png" alt="SemantiClip Overview">
@@ -106,18 +106,22 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
    - Deploy GPT-4o model for content generation (recommended: gpt-4o)
    - Add your API keys and deployment names to the configuration
 
-6. Configure Appsettings.Development.json
+6. Configure Appsettings.Development.json under the `SemanticClip.API`
    ```json
    {
      "AzureOpenAI": {
        "Endpoint": "your-azure-openai-endpoint",
        "ApiKey": "your-azure-openai-api-key",
-       "DeploymentName": "your-deployment-name"
      },
-     "Ollama": {
-       "Endpoint": "http://localhost:11434",
-       "Model": "phi4-mini"
-     }
+     "LocalSLM": {
+       "ModelId": "phi4-mini",
+       "Endpoint": "http://localhost:11434"
+     },
+     "AzureAIAgent": {
+       "ConnectionString": "your-azure-ai-agent-connection-string",
+       "ChatModelId": "gpt-4o",
+       "VectorStoreId": "semanticclipproject",
+       "MaxEvaluations": "3"
    }
    ```
 
@@ -141,7 +145,7 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
 2. Upload a video file
 3. Click "Process Video"
 4. Wait for the processing to complete
-5. View the generated transcript, chapters, and blog post
+5. View the generated transcript and blog post
 
 ## Roadmap
 

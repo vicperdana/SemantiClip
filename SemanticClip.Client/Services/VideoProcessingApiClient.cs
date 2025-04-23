@@ -65,21 +65,6 @@ public class VideoProcessingApiClient
         return await response.Content.ReadAsStringAsync();
     }
 
-    public async Task<List<Chapter>> GenerateChaptersAsync(string transcript)
-    {
-        var response = await _httpClient.PostAsJsonAsync("api/VideoProcessing/generate-chapters", transcript);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<List<Chapter>>()
-            ?? throw new Exception("Failed to deserialize chapters");
-    }
-
-    public async Task<string> GenerateBlogPostAsync(string transcript, List<Chapter> chapters)
-    {
-        var request = new { Transcript = transcript, Chapters = chapters };
-        var response = await _httpClient.PostAsJsonAsync("api/VideoProcessing/generate-blog", request);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadAsStringAsync();
-    }
 
     public async Task ProcessVideoAsync(IBrowserFile? videoFile, Func<VideoProcessingProgress, Task>? progressCallback = null)
     {
