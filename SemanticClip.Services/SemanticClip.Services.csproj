@@ -4,6 +4,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <NoWarn>SKEXP0070;SKEXP0010;SKEXP0080;SKEXP0001;SKEXP0110</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,7 +23,6 @@
     <PackageReference Include="Microsoft.SemanticKernel.Process.Core" Version="1.47.0-alpha" />
     <PackageReference Include="Microsoft.SemanticKernel.Process.LocalRuntime" Version="1.47.0-alpha" />
     <PackageReference Include="Microsoft.SemanticKernel.Yaml" Version="1.47.0" />
-    <PackageReference Include="YouTubeExplode" Version="6.5.4" />
   </ItemGroup>
 
   <ItemGroup>

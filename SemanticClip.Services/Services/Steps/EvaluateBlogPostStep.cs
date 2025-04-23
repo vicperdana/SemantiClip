@@ -16,7 +16,6 @@ namespace SemanticClip.Services.Steps;
 // This will evaluate the blog post and provide feedback on its quality, relevance, and engagement level.
 // There will be a maximum of 3 evaluations by default, but this number can be configured in the appsettings.json file.
 
-#pragma warning disable SKEXP0080
 public class EvaluateBlogPostStep : KernelProcessStep<VideoProcessingResponse>
 {
     private ILogger<EvaluateBlogPostStep> _logger = new LoggerFactory().CreateLogger<EvaluateBlogPostStep>();
@@ -29,7 +28,6 @@ public class EvaluateBlogPostStep : KernelProcessStep<VideoProcessingResponse>
         return ValueTask.CompletedTask;
     }
 
-#pragma warning disable SKEXP0110
     private async Task<AzureAIAgent> UseTemplateForAzureAIAgentAsync(
         AgentsClient agentsClient, string blogPost)
     {
@@ -80,7 +78,6 @@ public class EvaluateBlogPostStep : KernelProcessStep<VideoProcessingResponse>
         AIProjectClient client =
             AzureAIAgent.CreateAzureAIClient(AzureAIAgentConfig.ConnectionString, new AzureCliCredential());
         AgentsClient agentsClient = client.GetAgentsClient();
-#pragma warning disable SKEXP0110
         var agent = await UseTemplateForAzureAIAgentAsync(
             agentsClient: agentsClient,
             blogPost: _blogstate!.BlogPosts[_blogstate.UpdateIndex]);
@@ -107,7 +104,6 @@ public class EvaluateBlogPostStep : KernelProcessStep<VideoProcessingResponse>
     
     private async Task<string> InvokeAgentAsync(AzureAIAgent agent, AgentThread thread, string input)
     {
-#pragma warning restore SKEXP0110
         var message = new ChatMessageContent(AuthorRole.User, input);
         string? lastResponse = null;
 

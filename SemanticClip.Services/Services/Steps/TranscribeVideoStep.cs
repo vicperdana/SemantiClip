@@ -6,7 +6,6 @@ using System.Text;
 
 namespace SemanticClip.Services.Steps;
 
-#pragma warning disable SKEXP0080
 public class TranscribeVideoStep : KernelProcessStep
 {
     private string _transcript = "";
@@ -105,14 +104,12 @@ public class TranscribeVideoStep : KernelProcessStep
     {
         _logger.LogInformation("Transcribing audio: {AudioPath}", audioPath);
         
-        #pragma warning disable SKEXP0001
         var audioToTextService = kernel.GetRequiredService<IAudioToTextService>();
         
         using var audioFileStream = new FileStream(audioPath, FileMode.Open, FileAccess.Read);
         var audioFileBinaryData = await BinaryData.FromStreamAsync(audioFileStream);
         
         AudioContent audioContent = new(audioFileBinaryData, mimeType: null);
-        #pragma warning restore SKEXP0001
         
         var result = await audioToTextService.GetTextContentAsync(audioContent);
         _logger.LogInformation("Transcription completed successfully");

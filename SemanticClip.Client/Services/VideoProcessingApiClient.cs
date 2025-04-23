@@ -34,11 +34,6 @@ public class VideoProcessingApiClient
     {
         using var formData = new MultipartFormDataContent();
 
-        if (!string.IsNullOrEmpty(request.YouTubeUrl))
-        {
-            formData.Add(new StringContent(request.YouTubeUrl), "youtubeUrl");
-        }
-
         if (!string.IsNullOrEmpty(request.FileContent) && !string.IsNullOrEmpty(request.FileName))
         {
             var fileBytes = Convert.FromBase64String(request.FileContent);
@@ -86,15 +81,12 @@ public class VideoProcessingApiClient
         return await response.Content.ReadAsStringAsync();
     }
 
-     public async Task ProcessVideoAsync(string youtubeUrl, IBrowserFile? videoFile, Func<VideoProcessingProgress, Task>? progressCallback = null)
+    public async Task ProcessVideoAsync(IBrowserFile? videoFile, Func<VideoProcessingProgress, Task>? progressCallback = null)
     {
         ClientWebSocket? webSocket = null;
         try
         {
-            var request = new VideoProcessingRequest
-            {
-                YouTubeUrl = youtubeUrl
-            };
+            var request = new VideoProcessingRequest();
 
             if (videoFile != null)
             {

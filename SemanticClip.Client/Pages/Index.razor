@@ -110,7 +110,7 @@
 
         try
         {
-            await VideoProcessingApiClient.ProcessVideoAsync(string.Empty, videoFile, async (progressUpdate) =>
+            await VideoProcessingApiClient.ProcessVideoAsync(videoFile, async (progressUpdate) =>
             {
                 progress = progressUpdate.Percentage;
                 currentOperation = progressUpdate.CurrentOperation;

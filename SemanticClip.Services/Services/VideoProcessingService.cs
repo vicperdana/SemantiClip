@@ -25,26 +25,23 @@ public class VideoProcessingService : IVideoProcessingService
         // Create the kernel
         var builder = Kernel.CreateBuilder();
         
-        /* Use Azure OpenAI for chat completion
+        /* --- Use Azure OpenAI for chat completion agent ---
         builder.AddAzureOpenAIChatCompletion(
             _configuration["AzureOpenAI:ContentDeploymentName"]!,
             _configuration["AzureOpenAI:Endpoint"]!,
             _configuration["AzureOpenAI:ApiKey"]!);*/
         
-        // Use local SLM for chat completion
-#pragma warning disable SKEXP0070
+        // Use local SLM for chat completion agent
         builder.AddOllamaChatCompletion(
             modelId: _configuration["LocalSLM:ModelId"]!,
             endpoint: new Uri(_configuration["LocalSLM:Endpoint"]!)
         );
-        #pragma warning restore SKEXP0070
-        
-        #pragma warning disable SKEXP0010
+
+        // Use Azure OpenAI Whisper model for audio-to-text
         builder.AddAzureOpenAIAudioToText(
             _configuration["AzureOpenAI:WhisperDeploymentName"]!,
             _configuration["AzureOpenAI:Endpoint"]!,
             _configuration["AzureOpenAI:ApiKey"]!);
-        #pragma warning restore SKEXP0010
         _kernel = builder.Build();
 
         // Create the agents client for Azure AI Agent
@@ -80,7 +77,6 @@ public class VideoProcessingService : IVideoProcessingService
         try
         {
             // Create a new Semantic Kernel process
-            #pragma warning disable SKEXP0080
             ProcessBuilder processBuilder = new("VideoProcessingWorkflow");
             
             // Add the processing steps
@@ -90,7 +86,7 @@ public class VideoProcessingService : IVideoProcessingService
             var evaluateBlogPostStep = processBuilder.AddStepFromType<EvaluateBlogPostStep>();
             
             
-            // Orchestrate the workflow
+            // Orchestrate the process
             processBuilder
                 .OnInputEvent("Start")
                 .SendEventTo(new(prepareVideoStep, functionName: PrepareVideoStep.Functions.PrepareVideo,
@@ -128,8 +124,6 @@ public class VideoProcessingService : IVideoProcessingService
             }
             
             return videoProcessingResponse;
-
-#pragma warning restore SKEXP0080
         }
         catch (Exception ex)
         {
@@ -138,82 +132,4 @@ public class VideoProcessingService : IVideoProcessingService
             throw;
         }
     }
-
-    public async Task<string> TranscribeVideoAsync(string videoPath)
-    {
-        try{
-       #pragma warning disable SKEXP0080
-        ProcessBuilder processBuilder = new("VideoProcessingWorkflow");
-        var prepareVideoStep = processBuilder.AddStepFromType<PrepareVideoStep>();
-        var transcribeVideoStep = processBuilder.AddStepFromType<TranscribeVideoStep>();
-
-        prepareVideoStep
-                .OnEvent("VideoPrepared")
-                .SendEventTo(new(transcribeVideoStep, parameterName: "videoPath"))
-                .SendEventTo(new(transcribeVideoStep, parameterName: "logger"))
-                .SendEventTo(new(transcribeVideoStep, parameterName: "progressCallback"))
-                .SendEventTo(new(transcribeVideoStep, parameterName: "kernel"));
-
-        // Build the process
-        var process = processBuilder.Build();
-        
-        var initialResult = await process.StartAsync(_kernel, new KernelProcessEvent{Id = "VideoPrepared", Data = null});
-        var finalState = await initialResult.GetStateAsync();
-        var finalCompletion = finalState.ToProcessStateMetadata();
-        
-        if (finalCompletion.State is not string transcript)
-        {
-            throw new InvalidOperationException("Failed to transcribe video: Invalid state returned from process");
-        }
-        
-        return transcript;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error transcribing video");
-            UpdateProgress("Error", 0, "Error occurred", ex.Message);
-            throw;
-        }
-    }
-
-    
-    public async Task<string> GenerateBlogPostAsync(string transcript, List<Chapter> chapters)
-    {
-        try
-        {
-            #pragma warning disable SKEXP0080
-            ProcessBuilder processBuilder = new("VideoProcessingWorkflow");
-            var generateBlogPostStep = processBuilder.AddStepFromType<GenerateBlogPostStep>();
-
-            generateBlogPostStep
-                .OnEvent("BlogPostGenerated")
-                .SendEventTo(new(generateBlogPostStep, parameterName: "transcript"))
-                .SendEventTo(new(generateBlogPostStep, parameterName: "logger"))
-                .SendEventTo(new(generateBlogPostStep, parameterName: "progressCallback"))
-                .SendEventTo(new(generateBlogPostStep, parameterName: "kernel"));
-
-            // Build the process
-            var process = processBuilder.Build();
-            
-            var initialResult = await process.StartAsync(_kernel, new KernelProcessEvent{Id = "BlogPostGenerated", Data = null});
-            var finalState = await initialResult.GetStateAsync();
-            var finalCompletion = finalState.ToProcessStateMetadata();
-            
-            if (finalCompletion.State is not string blogPost)
-            {
-                throw new InvalidOperationException("Failed to generate blog post: Invalid state returned from process");
-            }
-            
-            return blogPost;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error generating blog post");
-            UpdateProgress("Error", 0, "Error occurred", ex.Message);
-            throw;
-        }
-    }
-    #pragma warning restore SKEXP0080
-    
-    
 }

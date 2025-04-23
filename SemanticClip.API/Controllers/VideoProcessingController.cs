@@ -146,43 +146,4 @@ public class VideoProcessingController : ControllerBase
         var bytes = Encoding.UTF8.GetBytes(message);
         await webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
     }
-
-   /*[HttpPost("transcribe")]
-    public async Task<ActionResult<string>> TranscribeVideo(IFormFile videoFile)
-    {
-        string? tempFilePath = null;
-        try
-        {
-            // Save the uploaded file to a temporary path
-            tempFilePath = Path.GetTempFileName();
-            using (var stream = new FileStream(tempFilePath, FileMode.Create))
-            {
-                await videoFile.CopyToAsync(stream);
-            }
-
-            // Call the service with the file path
-            var transcript = await _videoProcessingService.TranscribeVideoAsync(tempFilePath);
-            return Ok(transcript);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error transcribing video");
-            return StatusCode(500, $"Error processing video: {ex.Message}");
-        }
-        finally
-        {
-            // Clean up the temporary file
-            if (!string.IsNullOrEmpty(tempFilePath) && System.IO.File.Exists(tempFilePath))
-            {
-                try
-                {
-                    System.IO.File.Delete(tempFilePath);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to delete temporary transcription file: {Path}", tempFilePath);
-                }
-            }
-        }
-    }*/
 }
