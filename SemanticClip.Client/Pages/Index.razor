@@ -16,21 +16,25 @@
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <MudPaper Class="pa-4">
+        <div class="text-center mb-4">
+            <img src="images/SemantiClip-app.png" alt="SemantiClip Logo" style="max-width: 200px; height: auto;" />
+        </div>
         <MudText Typo="Typo.h4" Class="mb-4">Video Processing</MudText>
         
         <MudTabs>
             <MudTabPanel Text="Upload Video">
                 <MudPaper Class="pa-4 mt-4">
                     <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
-                        <MudTextField @bind-Value="youtubeUrl" Label="YouTube URL" Placeholder="Enter YouTube URL" />
-                        
                         <MudFileUpload T="IBrowserFile" FilesChanged="AssignSelectedFile">
-    <ActivatorContent>
-        <MudFab Color="Color.Success"
-                StartIcon="@Icons.Material.Filled.AttachFile" />
-    </ActivatorContent>
-</MudFileUpload>
-
+                            <ActivatorContent>
+                                <MudFab Color="Color.Success"
+                                        StartIcon="@Icons.Material.Filled.AttachFile" />
+                            </ActivatorContent>
+                        </MudFileUpload>
+                        @if (videoFile != null)
+                        {
+                            <MudText Class="mt-2">Selected file: @videoFile.Name</MudText>
+                        }
                     </MudForm>
 
                     <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@ProcessVideo" Disabled="@isProcessing" Class="mt-4">
@@ -65,24 +69,11 @@
             </MudPaper>
         }
 
-        @if (response?.Chapters?.Any() == true)
-        {
-            <MudPaper Class="pa-4 mt-4">
-                <MudText Typo="Typo.h6" Class="mb-2">Chapters</MudText>
-                <MudList T="Chapter">
-                    @foreach (var chapter in response.Chapters)
-                    {
-                        <MudListItem T="Chapter" Text="@($"{chapter.Title} ({chapter.StartTime:hh\\:mm\\:ss} - {chapter.EndTime:hh\\:mm\\:ss})")" />
-                    }
-                </MudList>
-            </MudPaper>
-        }
-
         @if (!string.IsNullOrEmpty(response?.BlogPost))
         {
             <MudPaper Class="pa-4 mt-4">
                 <MudText Typo="Typo.h6" Class="mb-2">Blog Post</MudText>
-                <MudText>@response.BlogPost</MudText>
+                <MudMarkdown Value="@response.BlogPost" />
             </MudPaper>
         }
     </MudPaper>
@@ -92,7 +83,6 @@
     private MudForm? form;
     private bool success;
     private string[] errors = Array.Empty<string>();
-    private string youtubeUrl = string.Empty;
     private IBrowserFile? videoFile;
     private bool isProcessing;
     private VideoProcessingResponse? response;
@@ -107,7 +97,7 @@
 
     private async Task ProcessVideo()
     {
-        if (string.IsNullOrEmpty(youtubeUrl) && videoFile == null)
+        if (videoFile == null)
         {
             return;
         }
@@ -120,7 +110,7 @@
 
         try
         {
-            await VideoProcessingApiClient.ProcessVideoAsync(youtubeUrl, videoFile, async (progressUpdate) =>
+            await VideoProcessingApiClient.ProcessVideoAsync(videoFile, async (progressUpdate) =>
             {
                 progress = progressUpdate.Percentage;
                 currentOperation = progressUpdate.CurrentOperation;
@@ -136,7 +126,7 @@
                     errorMessage = progressUpdate.Error ?? "Unknown error occurred.";
                     isProcessing = false;
                 }
-                await InvokeAsync(StateHasChanged); // Ensure UI updates with progress (use InvokeAsync)
+                await InvokeAsync(StateHasChanged);
             });
         }
         catch (Exception ex)
@@ -144,7 +134,7 @@
             Logger.LogError(ex, "Error processing video");
             isProcessing = false;
             errorMessage = ex.Message;
-            await InvokeAsync(StateHasChanged); // Ensure UI updates with error (use InvokeAsync)
+            await InvokeAsync(StateHasChanged);
         }
     }
 

@@ -18,7 +18,7 @@ builder.Services.AddScoped(sp => new HttpClient {
 });
 
 // Add file upload configuration to client
-builder.Configuration.AddInMemoryCollection(new Dictionary<string, string>
+builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
 {
     { "FileUpload:MaxRequestBodySizeInBytes", "3000000" }
 });
@@ -35,6 +35,7 @@ builder.Services.AddMudServices(config =>
     config.SnackbarConfiguration.ShowTransitionDuration = 500;
     config.SnackbarConfiguration.SnackbarVariant = Variant.Filled;
 });
+builder.Services.AddMudMarkdownServices();
 
 // Register VideoProcessingApiClient
 builder.Services.AddScoped<VideoProcessingApiClient>();

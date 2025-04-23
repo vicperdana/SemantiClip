@@ -1,0 +1,26 @@
+name: EvaluateBlogPost
+template: |
+  Based on the following blog post, generate an improved version that addresses these key aspects:
+  1. Content Quality: Improve structure, clarity, grammar, and technical accuracy
+  2. Relevance: Better address the topic and target audience
+  3. Engagement: Enhance writing style, readability, and reader engagement
+  4. SEO: Optimize content with relevant keywords while maintaining natural flow
+  5. Overall Improvement: Incorporate best practices for blog writing
+  6. Markdown Formatting: Ensure the output is well-structured in markdown format, heading must be formatted correctly with ## H2, and lists must be formatted with - or *.
+
+  Original Blog Post:
+  {{$blogPost}}
+
+  Please provide the improved version of the blog post, maintaining the same core message but enhancing it based on the above criteria. The output should be a complete, ready-to-publish blog post in a markdown format and nothing else.
+template_format: semantic-kernel
+description: A function that evaluates a blog post and generates an improved version based on content quality, relevance, engagement, and SEO criteria.
+input_variables:
+  - name: blogPost
+    description: The original blog post to improve.
+    is_required: true
+output_variable:
+  description: The improved version of the blog post with enhanced quality, relevance, engagement, and SEO optimization.
+execution_settings:
+  default:
+    function_choice_behavior:
+      type: auto 

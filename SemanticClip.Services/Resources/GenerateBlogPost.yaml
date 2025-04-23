@@ -1,0 +1,16 @@
+name: GenerateBlogPost
+template: |
+  Generate a blog post from the following video transcript formatted in markdown, make sure the markdown is valid and well-structured:
+  {{$transcript}}
+template_format: semantic-kernel
+description: A function that generates a blog post from a video transcript.
+input_variables:
+  - name: transcript
+    description: The video transcript to generate a blog post from.
+    is_required: true
+output_variable:
+  description: The generated blog post.
+execution_settings:
+  default:
+    function_choice_behavior:
+      type: auto
