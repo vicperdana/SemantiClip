@@ -106,7 +106,7 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
    - Deploy GPT-4o model for content generation (recommended: gpt-4o)
    - Add your API keys and deployment names to the configuration
 
-6. Configure Appsettings.Development.json under the `SemanticClip.API`
+6. Configure `appsettings.Development.json` under the SemanticClip.API project
    ```json
    {
      "AzureOpenAI": {
