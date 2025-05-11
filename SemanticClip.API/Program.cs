@@ -63,12 +63,20 @@ builder.Services.AddTransient<PrepareVideoStep>();
 builder.Services.AddTransient<TranscribeVideoStep>();
 builder.Services.AddTransient<GenerateBlogPostStep>();
 builder.Services.AddTransient<EvaluateBlogPostStep>();
+builder.Services.AddTransient<PublishBlogPostStep>();
 
 // Register BlogPostPlugin with proper logger
 builder.Services.AddTransient<BlogPostPlugin>(sp => 
 {
     var logger = sp.GetRequiredService<ILogger<BlogPostPlugin>>();
     return new BlogPostPlugin(logger);
+});
+
+// Register PublishBlogPlugin with proper logger
+builder.Services.AddTransient<PublishBlogPlugin>(sp => 
+{
+    var logger = sp.GetRequiredService<ILogger<PublishBlogPlugin>>();
+    return new PublishBlogPlugin(logger);
 });
 
 // Register KernelService

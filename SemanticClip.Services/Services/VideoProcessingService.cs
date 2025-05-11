@@ -25,17 +25,17 @@ public class VideoProcessingService : IVideoProcessingService
         // Create the kernel
         var builder = Kernel.CreateBuilder();
         
-        /* --- Use Azure OpenAI for chat completion agent ---
+        // --- Use Azure OpenAI for chat completion agent ---
         builder.AddAzureOpenAIChatCompletion(
             _configuration["AzureOpenAI:ContentDeploymentName"]!,
             _configuration["AzureOpenAI:Endpoint"]!,
-            _configuration["AzureOpenAI:ApiKey"]!);*/
+            _configuration["AzureOpenAI:ApiKey"]!);
         
-        // Use local SLM for chat completion agent
+        /* Use local SLM for chat completion agent
         builder.AddOllamaChatCompletion(
             modelId: _configuration["LocalSLM:ModelId"]!,
             endpoint: new Uri(_configuration["LocalSLM:Endpoint"]!)
-        );
+        );*/
 
         // Use Azure OpenAI Whisper model for audio-to-text
         builder.AddAzureOpenAIAudioToText(
@@ -84,6 +84,7 @@ public class VideoProcessingService : IVideoProcessingService
             var transcribeVideoStep = processBuilder.AddStepFromType<TranscribeVideoStep>();
             var generateBlogPostStep = processBuilder.AddStepFromType<GenerateBlogPostStep>();
             var evaluateBlogPostStep = processBuilder.AddStepFromType<EvaluateBlogPostStep>();
+            var publishBlogPostStep = processBuilder.AddStepFromType<PublishBlogPostStep>();
             
             
             // Orchestrate the process
@@ -110,6 +111,12 @@ public class VideoProcessingService : IVideoProcessingService
                     functionName: EvaluateBlogPostStep.Functions.EvaluateBlogPost,
                     parameterName: "blogstate"));
             
+            string EvaluateBlogPostComplete = nameof(EvaluateBlogPostComplete);
+            evaluateBlogPostStep
+                .OnEvent(EvaluateBlogPostComplete)
+                .SendEventTo(new ProcessFunctionTargetBuilder(publishBlogPostStep,
+                    functionName: PublishBlogPostStep.Functions.PublishBlogPost));
+            
             // Build the process
             var process = processBuilder.Build();
             
@@ -118,10 +125,15 @@ public class VideoProcessingService : IVideoProcessingService
             var finalState = await initialResult.GetStateAsync();
             var finalCompletion = finalState.ToProcessStateMetadata();
             
+            /* Need to edit this to get the published blog post state
             if (finalCompletion.StepsState!["EvaluateBlogPostStep"].State is not VideoProcessingResponse videoProcessingResponse)
             {
                 throw new InvalidOperationException("Failed to retrieve completion step state");
-            }
+            }*/
+            VideoProcessingResponse videoProcessingResponse = new()
+            {
+                BlogPost = finalCompletion.StepsState["PublishBlogPostStep"].State.ToString(),
+            };
             
             return videoProcessingResponse;
         }

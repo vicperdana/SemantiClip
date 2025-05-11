@@ -6,38 +6,40 @@ using SemanticClip.Core.Models;
 
 namespace SemanticClip.Services.Plugins;
 
-public sealed class BlogPostPlugin
+public sealed class PublishBlogPlugin
 {
     private readonly ILogger _logger;
     
-    public BlogPostPlugin(ILogger logger)
+    public PublishBlogPlugin(ILogger logger)
     {
         _logger = logger;
     }
 
-    [KernelFunction, Description("Generates a blog post from a video transcript.")]
-    public async Task<VideoProcessingResponse> GenerateBlogPostAsync(
-        [Description("The video transcript to generate a blog post from.")]
-        string transcript,
-        Kernel kernel)
+    [KernelFunction, Description("Publish the blog post to GitHub using ModelContextProtocol client with GitHub as server.")]
+    public async Task<VideoProcessingResponse> PublishBlogPluginAsync(
+        Kernel kernel,
+        [Description("The blog post to be published.")]
+        string blogPost)
     {
-        _logger.LogInformation("Generating blog post from transcript: {Transcript}", transcript);
+       
+        _logger.LogInformation("Publishing the blog post: {blogPost}", blogPost);
         
         var chatCompletion = kernel.GetRequiredService<IChatCompletionService>();
         var chat = new ChatHistory();
 
-        chat.AddSystemMessage("You are a professional content writer that creates engaging blog posts from video transcripts.");
-        chat.AddUserMessage($"Please create a blog post based on this transcript:\n\nTranscript:\n{transcript}\n");
+        chat.AddSystemMessage("You are a coordinator for a blog post publishing process. " +
+                              "You will receive a blog post and you need to publish it to GitHub.");
+        chat.AddUserMessage($"Publish this blog post:\nBlog Post:\n{blogPost}\n");
 
         var response = await chatCompletion.GetChatMessageContentAsync(chat);
-        var blogPost = response.Content;
-        _logger.LogInformation("Generated blog post: {BlogPost}", blogPost);
+        var publishedBlogPost = response.Content;
+        _logger.LogInformation("Published blog post: {BlogPost}", publishedBlogPost);
         
         return new VideoProcessingResponse
         {
             Status = "Completed",
-            Transcript = transcript,
-            BlogPost = blogPost!
+            Transcript = "",
+            BlogPost = publishedBlogPost!
         };
     }
 } 
