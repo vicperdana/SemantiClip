@@ -50,6 +50,9 @@ public class VideoProcessingService : IVideoProcessingService
         AzureAIAgentConfig.VectorStoreId = _configuration["AzureAIAgent:VectorStoreId"]!;
         AzureAIAgentConfig.MaxEvaluations = int.Parse(_configuration["AzureAIAgent:MaxEvaluations"]!);
         
+        // Create MCP Configuration setting
+        MCPConfig.GitHubPersonalAccessToken = _configuration["GitHub:PersonalAccessToken"]!;
+        
     }
 
     public void SetProgressCallback(Action<VideoProcessingProgress>? callback)
@@ -117,6 +120,11 @@ public class VideoProcessingService : IVideoProcessingService
                 .SendEventTo(new ProcessFunctionTargetBuilder(publishBlogPostStep,
                     functionName: PublishBlogPostStep.Functions.PublishBlogPost));
             
+            string PublishBlogPostComplete = nameof(PublishBlogPostComplete);
+            publishBlogPostStep
+                .OnEvent(PublishBlogPostComplete)
+                .StopProcess();
+            
             // Build the process
             var process = processBuilder.Build();
             
@@ -125,15 +133,11 @@ public class VideoProcessingService : IVideoProcessingService
             var finalState = await initialResult.GetStateAsync();
             var finalCompletion = finalState.ToProcessStateMetadata();
             
-            /* Need to edit this to get the published blog post state
-            if (finalCompletion.StepsState!["EvaluateBlogPostStep"].State is not VideoProcessingResponse videoProcessingResponse)
+            //Need to edit this to get the published blog post state
+            if (finalCompletion.StepsState!["PublishBlogPostStep"].State is not VideoProcessingResponse videoProcessingResponse)
             {
                 throw new InvalidOperationException("Failed to retrieve completion step state");
-            }*/
-            VideoProcessingResponse videoProcessingResponse = new()
-            {
-                BlogPost = finalCompletion.StepsState["PublishBlogPostStep"].State.ToString(),
-            };
+            }
             
             return videoProcessingResponse;
         }

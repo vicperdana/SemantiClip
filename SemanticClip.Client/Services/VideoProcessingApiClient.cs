@@ -187,4 +187,26 @@ public class VideoProcessingApiClient
             webSocket?.Dispose();
         }
     }
+
+    public async Task<string> PublishBlogPostWithMcpAsync(string blogPost, string commitMessage)
+    {
+        try
+        {
+            var request = new BlogPostPublishRequest
+            {
+                BlogPost = blogPost,
+                CommitMessage = commitMessage
+            };
+            
+            var response = await _httpClient.PostAsJsonAsync("api/BlogPublishing/publish", request);
+            response.EnsureSuccessStatusCode();
+            
+            return await response.Content.ReadAsStringAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error publishing blog post");
+            throw;
+        }
+    }
 }

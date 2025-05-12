@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Agents;
@@ -7,23 +8,25 @@ using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol.Transport;
 using SemanticClip.Core.Models;
 using SemanticClip.Services.Plugins;
+using SemanticClip.Services.Utilities;
 using AgentThread = Microsoft.SemanticKernel.Agents.AgentThread;
 
 namespace SemanticClip.Services.Steps;
 
 
 /// <summary> Publishes the blog post to GitHub using ModelContextProtocol client with GitHub as server. </summary>
-public class PublishBlogPostStep : KernelProcessStep
+public class PublishBlogPostStep : KernelProcessStep<VideoProcessingResponse>
 {
     private readonly ILogger<PublishBlogPostStep> _logger = new LoggerFactory().CreateLogger<PublishBlogPostStep>();
-
     private string _finalblogState = "";
+    private VideoProcessingResponse _state = new VideoProcessingResponse();
     
-    /*public override ValueTask ActivateAsync(KernelProcessStepState<String> state)
+    
+    public override ValueTask ActivateAsync(KernelProcessStepState<VideoProcessingResponse> state)
     {
-        _finalblogState = state.State;
+        _state = state.State;
         return ValueTask.CompletedTask;
-    }*/
+    }
     public static class Functions
     {
         public const string PublishBlogPost = nameof(PublishBlogPost);
@@ -51,10 +54,10 @@ public class PublishBlogPostStep : KernelProcessStep
 
     
     [KernelFunction(Functions.PublishBlogPost)]
-    public async Task<string> PublishBlogPostAsync(string finalblogState, Kernel kernel, KernelProcessStepContext context)
+    public async Task PublishBlogPostAsync(VideoProcessingResponse finalblogState, Kernel kernel, KernelProcessStepContext context)
     {
         _logger.LogInformation("Starting blog post publishing process");
-         _finalblogState = finalblogState;
+         _finalblogState = finalblogState.BlogPost;
         
         try
         {
@@ -72,8 +75,10 @@ public class PublishBlogPostStep : KernelProcessStep
             var result = await InvokeAgentAsync(agent, thread, instructions);
 
             // Update the state with the published blog post
+            string PublishBlogPostComplete = nameof(PublishBlogPostComplete);
             this._finalblogState = result.ToString();
-            return this._finalblogState;
+            this._state.BlogPost = this._finalblogState;
+            await context.EmitEventAsync(new() { Id = PublishBlogPostComplete, Data = this._state, Visibility = KernelProcessEventVisibility.Public});
         }
         catch (Exception ex)
         {
@@ -90,6 +95,10 @@ public class PublishBlogPostStep : KernelProcessStep
             Name = "GitHub",
             Command = "npx",
             Arguments = ["-y", "@modelcontextprotocol/server-github"],
+            EnvironmentVariables = new Dictionary<string, string>()
+            {
+                { "GITHUB_PERSONAL_ACCESS_TOKEN", MCPConfig.GitHubPersonalAccessToken }
+            }
         }));
 
         return mcpClient;

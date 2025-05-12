@@ -4,6 +4,7 @@ using SemanticClip.Core.Services;
 using SemanticClip.Services;
 using SemanticClip.Services.Plugins;
 using SemanticClip.Services.Steps;
+using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,15 +48,18 @@ builder.Services.AddCors(options =>
     });
 });
 
+
 // Register services
 builder.Services.AddScoped<IVideoProcessingService, VideoProcessingService>();
+
+// Register BlogPublishingController-related services
+builder.Services.AddTransient<PublishBlogPostStep>();
 
 // Configure logging
 builder.Services.AddLogging(loggingBuilder =>
 {
     loggingBuilder.AddConsole();
     loggingBuilder.AddDebug();
-    loggingBuilder.SetMinimumLevel(LogLevel.Information);
 });
 
 // Register all the Semantic Kernel process steps
@@ -64,6 +68,7 @@ builder.Services.AddTransient<TranscribeVideoStep>();
 builder.Services.AddTransient<GenerateBlogPostStep>();
 builder.Services.AddTransient<EvaluateBlogPostStep>();
 builder.Services.AddTransient<PublishBlogPostStep>();
+
 
 // Register BlogPostPlugin with proper logger
 builder.Services.AddTransient<BlogPostPlugin>(sp => 

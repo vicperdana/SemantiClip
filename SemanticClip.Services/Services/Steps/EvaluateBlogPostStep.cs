@@ -86,7 +86,7 @@ public class EvaluateBlogPostStep : KernelProcessStep<VideoProcessingResponse>
             this._state!.BlogPost = evaluation;
             this._state.Transcript = _blogstate.VideoProcessingResponse.Transcript;
             string EvaluateBlogPostComplete = nameof(EvaluateBlogPostComplete);
-            await context.EmitEventAsync(new() { Id = EvaluateBlogPostComplete, Data = "test value", Visibility = KernelProcessEventVisibility.Public});
+            await context.EmitEventAsync(new() { Id = EvaluateBlogPostComplete, Data = this._state, Visibility = KernelProcessEventVisibility.Public});
             //return this._state;
         }
         catch (Exception ex)
