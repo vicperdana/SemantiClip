@@ -3,18 +3,32 @@ using Microsoft.Extensions.Logging;
 using SemanticClip.Core.Models;
 using SemanticClip.Services.Steps;
 using SemanticClip.Services.Utilities;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Process;
 
 namespace SemanticClip.Services;
 
 public class BlogPublishingService
 {
     private readonly IConfiguration _configuration;
+    private readonly Kernel _kernel;
     private readonly ILogger<BlogPublishingService> _logger;
 
     public BlogPublishingService(IConfiguration configuration, ILogger<BlogPublishingService> logger)
     {
         _configuration = configuration;
         _logger = logger;
+
+        // Create the kernel
+        var builder = Kernel.CreateBuilder();
+        
+        // Use Azure OpenAI for chat completion agent
+        builder.AddAzureOpenAIChatCompletion(
+            _configuration["AzureOpenAI:ContentDeploymentName"]!,
+            _configuration["AzureOpenAI:Endpoint"]!,
+            _configuration["AzureOpenAI:ApiKey"]!);
+        
+        _kernel = builder.Build();
 
         // Set up MCP configuration
         MCPConfig.GitHubPersonalAccessToken = _configuration["GitHub:PersonalAccessToken"]!;
@@ -36,22 +50,23 @@ public class BlogPublishingService
                 .SendEventTo(new(publishBlogPostStep, functionName: PublishBlogPostStep.Functions.PublishBlogPost,
                     parameterName: "request"));
 
-            // Start the process
+            // Build the process
             var process = processBuilder.Build();
-            await process.StartAsync(new BlogPostPublishRequest
-            {
-                BlogPost = request.BlogPost,
-                CommitMessage = request.CommitMessage ?? "Published blog post via SemantiClip"
-            });
-
-            // Wait for completion
-            var result = await process.WaitForCompletionAsync();
             
-            return new BlogPublishingResponse
+            // Execute the workflow
+            var initialResult = await process.StartAsync(_kernel, new KernelProcessEvent{Id = "Start", Data = request});
+            var finalState = await initialResult.GetStateAsync();
+            var finalCompletion = finalState.ToProcessStateMetadata();
+            
+            // Get the completion step state
+            if (finalCompletion.StepsState!["PublishBlogPostStep"].State is not BlogPublishingResponse blogPublishingResponse)
             {
-                Success = result.IsSuccess,
-                Message = result.IsSuccess ? "Blog post published successfully" : result.Error
-            };
+                throw new InvalidOperationException("Failed to retrieve completion step state");
+            }
+            
+            return blogPublishingResponse;
+            
+            return blogPublishingResponse;
         }
         catch (Exception ex)
         {

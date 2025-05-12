@@ -79,8 +79,9 @@
             <MudPaper Class="pa-4 mt-4">
                 <MudText Typo="Typo.h6" Class="mb-2">MCP Publishing Options</MudText>
                 <MudTextField @bind-Value="mcpCommitMessage" Label="Commit Message" 
-                              HelperText="Summarize the last four commits to the vicperdana/semanticlip repository using the list_commits function."
-                              Lines="3" />
+                              Lines="3" 
+                              @bind-Value="mcpCommitMessage" 
+                              @onfocus='() => mcpCommitMessage = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " - Publish the blog"' />
                 <MudButton Variant="Variant.Filled" Color="Color.Secondary" 
                            OnClick="@PublishBlogPostWithMcp" 
                            Disabled="@isPublishing" 

@@ -1,10 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Microsoft.SemanticKernel;
 using SemanticClip.Core.Models;
-using SemanticClip.Services.Steps;
-using System;
-using System.Threading.Tasks;
+using SemanticClip.Services;
 
 namespace SemanticClip.API.Controllers
 {
@@ -13,14 +10,14 @@ namespace SemanticClip.API.Controllers
     public class BlogPublishingController : ControllerBase
     {
         private readonly ILogger<BlogPublishingController> _logger;
-        private readonly PublishBlogPostStep _publishBlogPostStep;
+        private readonly BlogPublishingService _blogPublishingService;
         
         public BlogPublishingController(
             ILogger<BlogPublishingController> logger,
-            PublishBlogPostStep publishBlogPostStep)
+            BlogPublishingService blogPublishingService)
         {
             _logger = logger;
-            _publishBlogPostStep = publishBlogPostStep;
+            _blogPublishingService = blogPublishingService;
         }
         
         [HttpPost("publish")]
@@ -33,18 +30,13 @@ namespace SemanticClip.API.Controllers
             
             try
             {
-                _logger.LogInformation("Publishing blog post with MCP");
+                _logger.LogInformation("Publishing blog post");
                 
-                // Create the GitHub commit message
-                var commitMessage = request.CommitMessage ?? "Published blog post via SemantiClip";
+                var result = await _blogPublishingService.PublishBlogPostAsync(request);
                 
-                // For the sake of simplicity, we'll create a method that mimics what would happen
-                // in the actual step implementation
-                var result = await SimulatePublishWithMcpAsync(request.BlogPost, commitMessage);
+                _logger.LogInformation("Blog post successfully published");
                 
-                _logger.LogInformation("Blog post successfully published with result: {Result}", result);
-                
-                return Ok(new { message = result });
+                return Ok(new { message = result.Message });
             }
             catch (Exception ex)
             {
@@ -53,14 +45,6 @@ namespace SemanticClip.API.Controllers
             }
         }
         
-        private async Task<string> SimulatePublishWithMcpAsync(string blogPost, string commitMessage)
-        {
-            // This would normally call the PublishBlogPostStep
-            // But for simplicity, we'll just simulate the process
-            await Task.Delay(1500); // Simulate processing time
-            
-            // Return a message that would normally come from MCP
-            return $"Blog post published successfully with commit message: '{commitMessage}'";
-        }
+
     }
 }

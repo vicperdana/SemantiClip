@@ -87,7 +87,6 @@ public class VideoProcessingService : IVideoProcessingService
             var transcribeVideoStep = processBuilder.AddStepFromType<TranscribeVideoStep>();
             var generateBlogPostStep = processBuilder.AddStepFromType<GenerateBlogPostStep>();
             var evaluateBlogPostStep = processBuilder.AddStepFromType<EvaluateBlogPostStep>();
-            var publishBlogPostStep = processBuilder.AddStepFromType<PublishBlogPostStep>();
             
             
             // Orchestrate the process
@@ -114,16 +113,6 @@ public class VideoProcessingService : IVideoProcessingService
                     functionName: EvaluateBlogPostStep.Functions.EvaluateBlogPost,
                     parameterName: "blogstate"));
             
-            string EvaluateBlogPostComplete = nameof(EvaluateBlogPostComplete);
-            evaluateBlogPostStep
-                .OnEvent(EvaluateBlogPostComplete)
-                .SendEventTo(new ProcessFunctionTargetBuilder(publishBlogPostStep,
-                    functionName: PublishBlogPostStep.Functions.PublishBlogPost));
-            
-            string PublishBlogPostComplete = nameof(PublishBlogPostComplete);
-            publishBlogPostStep
-                .OnEvent(PublishBlogPostComplete)
-                .StopProcess();
             
             // Build the process
             var process = processBuilder.Build();
@@ -134,7 +123,7 @@ public class VideoProcessingService : IVideoProcessingService
             var finalCompletion = finalState.ToProcessStateMetadata();
             
             //Need to edit this to get the published blog post state
-            if (finalCompletion.StepsState!["PublishBlogPostStep"].State is not VideoProcessingResponse videoProcessingResponse)
+            if (finalCompletion.StepsState!["EvaluateBlogPostStep"].State is not VideoProcessingResponse videoProcessingResponse)
             {
                 throw new InvalidOperationException("Failed to retrieve completion step state");
             }
