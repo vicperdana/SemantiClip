@@ -14,16 +14,15 @@ using AgentThread = Microsoft.SemanticKernel.Agents.AgentThread;
 namespace SemanticClip.Services.Steps;
 
 /// <summary> Publishes the blog post to GitHub using ModelContextProtocol client with GitHub as server. </summary>
-public class PublishBlogPostStep : KernelProcessStep<BlogPostPublishRequest>
+public class PublishBlogPostStep : KernelProcessStep<BlogPublishingResponse>
 {
     private readonly ILogger<PublishBlogPostStep> _logger = new LoggerFactory().CreateLogger<PublishBlogPostStep>();
-    private string _finalblogState = "";
-    private BlogPostPublishRequest _state = new();
+    private BlogPublishingResponse? _finalblogState = new();
+    //private BlogPostPublishRequest _state = new();
 
-
-    public override ValueTask ActivateAsync(KernelProcessStepState<BlogPostPublishRequest> state)
+    public override ValueTask ActivateAsync(KernelProcessStepState<BlogPublishingResponse> state)
     {
-        _state = state.State;
+        _finalblogState = state.State;
         return ValueTask.CompletedTask;
     }
 
@@ -36,10 +35,14 @@ public class PublishBlogPostStep : KernelProcessStep<BlogPostPublishRequest>
         Kernel kernel,
         KernelPlugin plugin,
         string? instructions,
-        string? name, IList<McpClientTool> mcpTools)
+        string? name,
+        IList<McpClientTool>? mcpTools)
     {
         // Create a kernel and register the MCP tools as kernel functions
-        kernel.Plugins.AddFromFunctions("GitHub", mcpTools.Select(aiFunction => aiFunction.AsKernelFunction()));
+        if (mcpTools != null && mcpTools.Any())
+        {
+            kernel.Plugins.AddFromFunctions("GitHub", mcpTools.Select(aiFunction => aiFunction.AsKernelFunction()));
+        }
         ChatCompletionAgent agent = new()
         {
             Instructions = instructions,
@@ -55,11 +58,18 @@ public class PublishBlogPostStep : KernelProcessStep<BlogPostPublishRequest>
 
 
     [KernelFunction(Functions.PublishBlogPost)]
-    public async Task PublishBlogPostAsync(BlogPostPublishRequest finalblogState, Kernel kernel,
+    public async Task PublishBlogPostAsync(BlogPostPublishRequest? request, Kernel kernel,
         KernelProcessStepContext context)
     {
         _logger.LogInformation("Starting blog post publishing process");
-        _finalblogState = finalblogState.BlogPost;
+        BlogPostPublishRequest blogRequest = request ?? throw new ArgumentNullException(nameof(request));
+        string? blogPostContent = blogRequest.BlogPost;
+        
+        if (string.IsNullOrEmpty(blogPostContent))
+        {
+            _logger.LogWarning("Blog post content is null or empty");
+            return;
+        }
 
         try
         {
@@ -70,7 +80,8 @@ public class PublishBlogPostStep : KernelProcessStep<BlogPostPublishRequest>
             // Use Semantic Kernel to create an agent and publish the blog post
             var publishBlogPlugin = new PublishBlogPlugin(_logger);
             var plugin = KernelPluginFactory.CreateFromObject(publishBlogPlugin);
-            var instructions = "Answer questions about GitHub repositories.";
+            var instructions = request.CommitMessage +
+                               " \n\n content:" + request.BlogPost; 
             var agent = CreateAgentWithPlugin(kernel, plugin, instructions, "PublishBlogPost", mcpTools);
             var thread = new ChatHistoryAgentThread();
 
@@ -78,11 +89,12 @@ public class PublishBlogPostStep : KernelProcessStep<BlogPostPublishRequest>
 
             // Update the state with the published blog post
             string PublishBlogPostComplete = nameof(PublishBlogPostComplete);
-            _finalblogState = result.ToString();
-            _state.BlogPost = _finalblogState;
+            this._finalblogState!.Message = "Blog post published successfully";
+            this._finalblogState.Success = true;
+            this._finalblogState.Result = result.ToString();
             await context.EmitEventAsync(new KernelProcessEvent
             {
-                Id = PublishBlogPostComplete, Data = _state, Visibility = KernelProcessEventVisibility.Public
+                Id = PublishBlogPostComplete, Data = this._finalblogState, Visibility = KernelProcessEventVisibility.Public
             });
         }
         catch (Exception ex)
@@ -100,21 +112,24 @@ public class PublishBlogPostStep : KernelProcessStep<BlogPostPublishRequest>
             Name = "GitHub",
             Command = "npx",
             Arguments = ["-y", "@modelcontextprotocol/server-github"],
-            EnvironmentVariables = new Dictionary<string, string>
+            EnvironmentVariables = new Dictionary<string, string>(StringComparer.Ordinal)
             {
-                { "GITHUB_PERSONAL_ACCESS_TOKEN", MCPConfig.GitHubPersonalAccessToken }
+                { "GITHUB_PERSONAL_ACCESS_TOKEN", MCPConfig.GitHubPersonalAccessToken ?? string.Empty }
             }
         }));
 
         return mcpClient;
     }
 
-    private async Task<string> InvokeAgentAsync(ChatCompletionAgent agent, AgentThread thread, string input)
+    private async Task<string> InvokeAgentAsync(ChatCompletionAgent agent, AgentThread thread, string? input)
     {
-        //var message = new ChatMessageContent(AuthorRole.User, input);
-        var message = new ChatMessageContent(AuthorRole.User,
-            "Summarize the last four commits to the vicperdana/semanticlip repository using the list_commits function.");
-        string? lastResponse = null;
+        if (string.IsNullOrEmpty(input))
+        {
+            throw new ArgumentException("Input cannot be null or empty", nameof(input));
+        }
+        
+        var message = new ChatMessageContent(AuthorRole.User, input);
+        string? lastResponse = string.Empty;
 
         await foreach (var response in agent.InvokeAsync(message, thread))
         {

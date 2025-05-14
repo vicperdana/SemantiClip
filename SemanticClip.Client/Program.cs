@@ -4,7 +4,7 @@ using MudBlazor;
 using MudBlazor.Services;
 using SemanticClip.Client;
 using SemanticClip.Client.Services;
-using SemanticClip.Core.Services;
+using SemanticClip.Core.Interfaces;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");

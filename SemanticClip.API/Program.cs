@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-using SemanticClip.Core.Services;
+using SemanticClip.Core.Interfaces;
 using SemanticClip.Services;
 using SemanticClip.Services.Plugins;
 using SemanticClip.Services.Steps;
@@ -51,6 +51,7 @@ builder.Services.AddCors(options =>
 
 // Register services
 builder.Services.AddScoped<IVideoProcessingService, VideoProcessingService>();
+builder.Services.AddScoped<IBlogPublishingService, BlogPublishingService>();
 
 // Register BlogPublishingController-related services
 builder.Services.AddTransient<PublishBlogPostStep>();
@@ -117,4 +118,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+
 

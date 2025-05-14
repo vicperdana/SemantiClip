@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using SemanticClip.Core.Interfaces;
 using SemanticClip.Core.Models;
-using SemanticClip.Services;
 
 namespace SemanticClip.API.Controllers
 {
@@ -10,11 +10,11 @@ namespace SemanticClip.API.Controllers
     public class BlogPublishingController : ControllerBase
     {
         private readonly ILogger<BlogPublishingController> _logger;
-        private readonly BlogPublishingService _blogPublishingService;
+        private readonly IBlogPublishingService _blogPublishingService;
         
         public BlogPublishingController(
             ILogger<BlogPublishingController> logger,
-            BlogPublishingService blogPublishingService)
+            IBlogPublishingService blogPublishingService)
         {
             _logger = logger;
             _blogPublishingService = blogPublishingService;
@@ -34,14 +34,26 @@ namespace SemanticClip.API.Controllers
                 
                 var result = await _blogPublishingService.PublishBlogPostAsync(request);
                 
-                _logger.LogInformation("Blog post successfully published");
-                
-                return Ok(new { message = result.Message });
+                if (result.Success)
+                {
+                    _logger.LogInformation("Blog post successfully published");
+                    return Ok(result);
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to publish blog post: {Message}", result.Message);
+                    return BadRequest(result);
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error publishing blog post: {Error}", ex.Message);
-                return StatusCode(500, $"Error publishing blog post: {ex.Message}");
+                var errorMessage = $"Error publishing blog post: {ex.Message}";
+                _logger.LogError(ex, errorMessage);
+                return StatusCode(500, new BlogPublishingResponse 
+                { 
+                    Success = false, 
+                    Message = errorMessage 
+                });
             }
         }
         

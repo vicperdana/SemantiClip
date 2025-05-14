@@ -1,14 +1,15 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Process;
+using SemanticClip.Core.Interfaces;
 using SemanticClip.Core.Models;
 using SemanticClip.Services.Steps;
 using SemanticClip.Services.Utilities;
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Process;
 
 namespace SemanticClip.Services;
 
-public class BlogPublishingService
+public class BlogPublishingService : IBlogPublishingService
 {
     private readonly IConfiguration _configuration;
     private readonly Kernel _kernel;
@@ -61,17 +62,34 @@ public class BlogPublishingService
             // Get the completion step state
             if (finalCompletion.StepsState!["PublishBlogPostStep"].State is not BlogPublishingResponse blogPublishingResponse)
             {
-                throw new InvalidOperationException("Failed to retrieve completion step state");
+                // Try to get the state from the step state directly
+                if (finalCompletion.StepsState.TryGetValue("PublishBlogPostStep", out var stepState) && 
+                    stepState.State is BlogPublishingResponse responseFromState)
+                {
+                    return responseFromState;
+                }
+                
+                // Fallback to checking the final state
+                if (finalCompletion.State is IDictionary<string, object> stateData && 
+                    stateData.TryGetValue("response", out var responseObj) && 
+                    responseObj is BlogPublishingResponse response)
+                {
+                    return response;
+                }
+                
+                throw new InvalidOperationException("Failed to retrieve completion step state or event data");
             }
-            
-            return blogPublishingResponse;
             
             return blogPublishingResponse;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error publishing blog post: {Error}", ex.Message);
-            throw;
+            return new BlogPublishingResponse 
+            { 
+                Success = false, 
+                Message = $"Error publishing blog post: {ex.Message}" 
+            };
         }
     }
 }

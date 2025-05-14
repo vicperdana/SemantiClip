@@ -3,8 +3,8 @@
 @using SemanticClip.Client.Services
 @using System.Net.WebSockets
 @using SemanticClip.Core.Models
-@using System.Text
 @using System.Text.Json
+@using System.Text
 @using MudBlazor
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Web
@@ -78,10 +78,8 @@
             
             <MudPaper Class="pa-4 mt-4">
                 <MudText Typo="Typo.h6" Class="mb-2">MCP Publishing Options</MudText>
-                <MudTextField @bind-Value="mcpCommitMessage" Label="Commit Message" 
-                              Lines="3" 
-                              @bind-Value="mcpCommitMessage" 
-                              @onfocus='() => mcpCommitMessage = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " - Publish the blog"' />
+                <MudTextField @bind-Value="mcpCommitMessage" Label="MCP Instructions" 
+                              Lines="3" />
                 <MudButton Variant="Variant.Filled" Color="Color.Secondary" 
                            OnClick="@PublishBlogPostWithMcp" 
                            Disabled="@isPublishing" 
@@ -116,6 +114,12 @@
     private string mcpCommitMessage = string.Empty;
     private string publishingMessage = string.Empty;
     private Severity publishingAlertSeverity = Severity.Info;
+    
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        mcpCommitMessage = $"Commit the blog post as a markdown to vicperdana/mcptest with commit message: Blog post published {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
+    }
 
     private void AssignSelectedFile(IBrowserFile? file)
     {
@@ -190,23 +194,49 @@
             publishingAlertSeverity = Severity.Info;
             await InvokeAsync(StateHasChanged);
             
-            // Call the API to publish the blog post
-            var httpResponse = await Http.PostAsJsonAsync("api/BlogPublishing/publish", new
-            {
-                BlogPost = response.BlogPost,
-                CommitMessage = mcpCommitMessage
-            });
+            // Call the API to publish the blog post with progress updates
+            var result = await VideoProcessingApiClient.PublishBlogPostWithMcpAsync(
+                response.BlogPost ?? string.Empty,
+                mcpCommitMessage,
+                async (progress) =>
+                {
+                    publishingMessage = progress.CurrentOperation;
+                    publishingAlertSeverity = progress.Status switch
+                    {
+                        "Failed" => Severity.Error,
+                        "Completed" => Severity.Success,
+                        _ => Severity.Info
+                    };
+                    
+                    if (!string.IsNullOrEmpty(progress.Error))
+                    {
+                        publishingMessage = $"Error: {progress.Error}";
+                    }
+                    
+                    // If we have a result URL, add it to the message
+                    if (!string.IsNullOrEmpty(progress.Result))
+                    {
+                        publishingMessage += $"\n\nView on GitHub: {progress.Result}";
+                    }
+                    
+                    await InvokeAsync(StateHasChanged);
+                });
             
-            if (httpResponse.IsSuccessStatusCode)
+            // Update the UI based on the result
+            if (result.Success)
             {
-                var result = await httpResponse.Content.ReadFromJsonAsync<dynamic>();
-                publishingMessage = result?.message ?? "Blog post published successfully!";
+                publishingMessage = result.Message ?? "Blog post published successfully!";
                 publishingAlertSeverity = Severity.Success;
+                
+                // If we have a result URL, add it to the message
+                if (!string.IsNullOrEmpty(result.Result))
+                {
+                    publishingMessage += $"\n\nView on GitHub: {result.Result}";
+                }
             }
             else
             {
-                var errorText = await httpResponse.Content.ReadAsStringAsync();
-                publishingMessage = $"Error: {errorText}";
+                publishingMessage = result.Message ?? "Failed to publish blog post";
                 publishingAlertSeverity = Severity.Error;
             }
         }

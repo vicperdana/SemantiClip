@@ -16,6 +16,7 @@ public class BlogPublishingProgress
     [JsonPropertyName("error")]
     public string? Error { get; set; }
 
+
     [JsonPropertyName("result")]
-    public BlogPublishingResponse? Result { get; set; }
+    public string? Result { get; set; }
 }

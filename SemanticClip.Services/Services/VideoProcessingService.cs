@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
+using SemanticClip.Core.Interfaces;
 using SemanticClip.Core.Models;
-using SemanticClip.Core.Services;
 using SemanticClip.Services.Steps;
 using SemanticClip.Services.Utilities;
 
