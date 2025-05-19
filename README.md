@@ -95,10 +95,14 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
 
 4. Configure GitHub Integration
    ```bash
-   # Create a GitHub personal access token with repo access
-   # Add it to your appsettings.json or environment variables as GitHub:PersonalAccessToken
+   # Create a GitHub personal access token with repo access - see more details [here](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token)
+   # Copy the generated token and add it to your appsettings.json 
+   
+   "GitHub": {
+    "PersonalAccessToken": "yourGitHubToken"
+  },
    ```
-
+   
 5. Install FFmpeg
    ```bash
    # macOS
@@ -157,6 +161,7 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
 3. Click "Process Video"
 4. Wait for the processing to complete
 5. View the generated transcript and blog post
+6. To publish the blog post to GitHub, edit the instructions with a repo that you have write access to and click "Submit with MCP"
 
 ## Roadmap
 

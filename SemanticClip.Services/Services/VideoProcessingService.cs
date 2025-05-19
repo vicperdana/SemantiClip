@@ -25,17 +25,18 @@ public class VideoProcessingService : IVideoProcessingService
         // Create the kernel
         var builder = Kernel.CreateBuilder();
         
-        // --- Use Azure OpenAI for chat completion agent ---
+        /* --- Use Azure OpenAI for chat completion agent ---
         builder.AddAzureOpenAIChatCompletion(
             _configuration["AzureOpenAI:ContentDeploymentName"]!,
             _configuration["AzureOpenAI:Endpoint"]!,
             _configuration["AzureOpenAI:ApiKey"]!);
+        */
         
-        /* Use local SLM for chat completion agent
+        //Use local SLM for chat completion agent
         builder.AddOllamaChatCompletion(
             modelId: _configuration["LocalSLM:ModelId"]!,
             endpoint: new Uri(_configuration["LocalSLM:Endpoint"]!)
-        );*/
+        );
 
         // Use Azure OpenAI Whisper model for audio-to-text
         builder.AddAzureOpenAIAudioToText(
