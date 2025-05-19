@@ -2,7 +2,6 @@ using Azure.AI.Projects;
 using Azure.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Agents;
 using SemanticClip.Core.Models;
 using SemanticClip.Services.Utils;
 using Microsoft.SemanticKernel.Agents.AzureAI;
@@ -21,7 +20,6 @@ public class EvaluateBlogPostStep : KernelProcessStep<VideoProcessingResponse>
     private ILogger<EvaluateBlogPostStep> _logger = new LoggerFactory().CreateLogger<EvaluateBlogPostStep>();
     private VideoProcessingResponse? _state;
     
-
     public override ValueTask ActivateAsync(KernelProcessStepState<VideoProcessingResponse> state)
     {
         _state = state.State;
@@ -35,9 +33,7 @@ public class EvaluateBlogPostStep : KernelProcessStep<VideoProcessingResponse>
         PromptTemplateConfig templateConfig = KernelFunctionYaml.ToPromptTemplateConfig(evaluateBlogPostYaml);
         KernelPromptTemplateFactory templateFactory = new();
         
-        
         // Create Azure AI agent
-        
         Azure.AI.Projects.Agent definition = await agentsClient.CreateAgentAsync(
             AzureAIAgentConfig.ChatModelId,
             templateConfig.Name,
@@ -65,16 +61,13 @@ public class EvaluateBlogPostStep : KernelProcessStep<VideoProcessingResponse>
     }
 
     // Create the agent with a template and pass the latest evaluated blog post as the input
-
     [KernelFunction(Functions.EvaluateBlogPost)]
-    public async Task<VideoProcessingResponse> EvaluateBlogPostAsync(BlogPostProcessingResponse blogstate, Kernel kernel, KernelProcessStepContext context)
+    public async Task EvaluateBlogPostAsync(BlogPostProcessingResponse blogstate, Kernel kernel, KernelProcessStepContext context)
     {
         _logger.LogInformation("Starting blog post evaluation process");
         BlogPostProcessingResponse _blogstate = blogstate;
-
-      
+        
         // Create the Azure AI agent client
-
         AIProjectClient client =
             AzureAIAgent.CreateAzureAIClient(AzureAIAgentConfig.ConnectionString, new AzureCliCredential());
         AgentsClient agentsClient = client.GetAgentsClient();
@@ -89,11 +82,12 @@ public class EvaluateBlogPostStep : KernelProcessStep<VideoProcessingResponse>
         try
         {
             var evaluation = await InvokeAgentAsync(agent, thread, _blogstate.BlogPosts[_blogstate.UpdateIndex]);
-            
+            //this._state = new VideoProcessingResponse();
             this._state!.BlogPost = evaluation;
             this._state.Transcript = _blogstate.VideoProcessingResponse.Transcript;
-            
-            return this._state;
+            string EvaluateBlogPostComplete = nameof(EvaluateBlogPostComplete);
+            await context.EmitEventAsync(new() { Id = EvaluateBlogPostComplete, Data = this._state, Visibility = KernelProcessEventVisibility.Public});
+            //return this._state;
         }
         catch (Exception ex)
         {

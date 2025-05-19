@@ -1,6 +1,6 @@
 using System.Net.Http.Json;
+using SemanticClip.Core.Interfaces;
 using SemanticClip.Core.Models;
-using SemanticClip.Core.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.Logging;
@@ -30,7 +30,7 @@ public class VideoProcessingApiClient
         Console.WriteLine($"Configured max file size: {_maxRequestBodySize} bytes");
     }
 
-    public async Task<VideoProcessingResponse> ProcessVideoAsync(VideoProcessingRequest request)
+   /* public async Task<VideoProcessingResponse> ProcessVideoAsync(VideoProcessingRequest request)
     {
         using var formData = new MultipartFormDataContent();
 
@@ -46,9 +46,9 @@ public class VideoProcessingApiClient
 
         return await response.Content.ReadFromJsonAsync<VideoProcessingResponse>()
             ?? throw new Exception("Failed to deserialize response");
-    }
+    }*/
 
-    public async Task<string> TranscribeVideoAsync(Stream videoStream)
+    /*public async Task<string> TranscribeVideoAsync(Stream videoStream)
     {
         Console.WriteLine($"Current max size: {_maxRequestBodySize}, File size: {videoStream.Length}");
 
@@ -63,7 +63,7 @@ public class VideoProcessingApiClient
         var response = await _httpClient.PostAsync("api/VideoProcessing/transcribe", content);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadAsStringAsync();
-    }
+    }*/
 
 
     public async Task ProcessVideoAsync(IBrowserFile? videoFile, Func<VideoProcessingProgress, Task>? progressCallback = null)
@@ -185,6 +185,124 @@ public class VideoProcessingApiClient
                 }
             }
             webSocket?.Dispose();
+        }
+    }
+
+    public async Task<BlogPublishingResponse> PublishBlogPostWithMcpAsync(string blogPost, string commitMessage, Func<BlogPublishingProgress, Task>? progressCallback = null)
+    {
+        try
+        {
+            var request = new BlogPostPublishRequest
+            {
+                BlogPost = blogPost,
+                CommitMessage = commitMessage
+            };
+            
+            // Initial progress update
+            if (progressCallback != null)
+            {
+                await progressCallback(new BlogPublishingProgress
+                {
+                    Status = "Starting",
+                    Percentage = 0,
+                    CurrentOperation = "Preparing to publish blog post"
+                });
+            }
+            
+            // Make the API call
+            var response = await _httpClient.PostAsJsonAsync("api/BlogPublishing/publish", request);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                var errorMessage = $"Error publishing blog post: {response.StatusCode} - {errorContent}";
+                
+                if (progressCallback != null)
+                {
+                    await progressCallback(new BlogPublishingProgress
+                    {
+                        Status = "Failed",
+                        Percentage = 100,
+                        CurrentOperation = "Failed to publish blog post",
+                        Error = errorMessage
+                    });
+                }
+                
+                return new BlogPublishingResponse 
+                { 
+                    Success = false, 
+                    Message = errorMessage 
+                };
+            }
+            
+            // Parse the response
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<BlogPublishingResponse>(responseContent, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            
+            if (result == null)
+            {
+                var errorMessage = "Failed to deserialize the response from the server.";
+                
+                if (progressCallback != null)
+                {
+                    await progressCallback(new BlogPublishingProgress
+                    {
+                        Status = "Failed",
+                        Percentage = 100,
+                        CurrentOperation = "Failed to publish blog post",
+                        Error = errorMessage
+                    });
+                }
+                
+                return new BlogPublishingResponse 
+                { 
+                    Success = false, 
+                    Message = errorMessage 
+                };
+            }
+            
+            // Success progress update
+            if (progressCallback != null)
+            {
+                await progressCallback(new BlogPublishingProgress
+                {
+                    Status = result.Success ? "Completed" : "Failed",
+                    Percentage = 100,
+                    CurrentOperation = result.Success 
+                        ? "Blog post published successfully" 
+                        : result.Message,
+                    Error = result.Success ? null : result.Message,
+                    Result = result.Result
+                });
+            }
+            
+            return result;
+        }
+        catch (Exception ex)
+        {
+            var errorMessage = $"An unexpected error occurred: {ex.Message}";
+            
+            if (progressCallback != null)
+            {
+                await progressCallback(new BlogPublishingProgress
+                {
+                    Status = "Failed",
+                    Percentage = 100,
+                    CurrentOperation = "Error publishing blog post",
+                    Error = errorMessage
+                });
+            }
+            
+            _logger.LogError(ex, "Error publishing blog post");
+            
+            return new BlogPublishingResponse 
+            { 
+                Success = false, 
+                Message = errorMessage 
+            };
         }
     }
 }

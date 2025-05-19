@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
+using SemanticClip.Core.Interfaces;
 using SemanticClip.Core.Models;
-using SemanticClip.Core.Services;
 using SemanticClip.Services.Steps;
 using SemanticClip.Services.Utilities;
 
@@ -29,9 +29,10 @@ public class VideoProcessingService : IVideoProcessingService
         builder.AddAzureOpenAIChatCompletion(
             _configuration["AzureOpenAI:ContentDeploymentName"]!,
             _configuration["AzureOpenAI:Endpoint"]!,
-            _configuration["AzureOpenAI:ApiKey"]!);*/
+            _configuration["AzureOpenAI:ApiKey"]!);
+        */
         
-        // Use local SLM for chat completion agent
+        //Use local SLM for chat completion agent
         builder.AddOllamaChatCompletion(
             modelId: _configuration["LocalSLM:ModelId"]!,
             endpoint: new Uri(_configuration["LocalSLM:Endpoint"]!)
@@ -49,6 +50,9 @@ public class VideoProcessingService : IVideoProcessingService
         AzureAIAgentConfig.ChatModelId = _configuration["AzureAIAgent:ChatModelId"]!;
         AzureAIAgentConfig.VectorStoreId = _configuration["AzureAIAgent:VectorStoreId"]!;
         AzureAIAgentConfig.MaxEvaluations = int.Parse(_configuration["AzureAIAgent:MaxEvaluations"]!);
+        
+        // Create MCP Configuration setting
+        MCPConfig.GitHubPersonalAccessToken = _configuration["GitHub:PersonalAccessToken"]!;
         
     }
 
@@ -110,6 +114,7 @@ public class VideoProcessingService : IVideoProcessingService
                     functionName: EvaluateBlogPostStep.Functions.EvaluateBlogPost,
                     parameterName: "blogstate"));
             
+            
             // Build the process
             var process = processBuilder.Build();
             
@@ -118,6 +123,7 @@ public class VideoProcessingService : IVideoProcessingService
             var finalState = await initialResult.GetStateAsync();
             var finalCompletion = finalState.ToProcessStateMetadata();
             
+            //Need to edit this to get the published blog post state
             if (finalCompletion.StepsState!["EvaluateBlogPostStep"].State is not VideoProcessingResponse videoProcessingResponse)
             {
                 throw new InvalidOperationException("Failed to retrieve completion step state");

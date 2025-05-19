@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using SemanticClip.Core.Interfaces;
 using SemanticClip.Core.Models;
-using SemanticClip.Core.Services;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;

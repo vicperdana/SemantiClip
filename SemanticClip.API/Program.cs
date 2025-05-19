@@ -1,9 +1,10 @@
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-using SemanticClip.Core.Services;
+using SemanticClip.Core.Interfaces;
 using SemanticClip.Services;
 using SemanticClip.Services.Plugins;
 using SemanticClip.Services.Steps;
+using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,15 +48,19 @@ builder.Services.AddCors(options =>
     });
 });
 
+
 // Register services
 builder.Services.AddScoped<IVideoProcessingService, VideoProcessingService>();
+builder.Services.AddScoped<IBlogPublishingService, BlogPublishingService>();
+
+// Register BlogPublishingController-related services
+builder.Services.AddTransient<PublishBlogPostStep>();
 
 // Configure logging
 builder.Services.AddLogging(loggingBuilder =>
 {
     loggingBuilder.AddConsole();
     loggingBuilder.AddDebug();
-    loggingBuilder.SetMinimumLevel(LogLevel.Information);
 });
 
 // Register all the Semantic Kernel process steps
@@ -63,12 +68,21 @@ builder.Services.AddTransient<PrepareVideoStep>();
 builder.Services.AddTransient<TranscribeVideoStep>();
 builder.Services.AddTransient<GenerateBlogPostStep>();
 builder.Services.AddTransient<EvaluateBlogPostStep>();
+builder.Services.AddTransient<PublishBlogPostStep>();
+
 
 // Register BlogPostPlugin with proper logger
 builder.Services.AddTransient<BlogPostPlugin>(sp => 
 {
     var logger = sp.GetRequiredService<ILogger<BlogPostPlugin>>();
     return new BlogPostPlugin(logger);
+});
+
+// Register PublishBlogPlugin with proper logger
+builder.Services.AddTransient<PublishBlogPlugin>(sp => 
+{
+    var logger = sp.GetRequiredService<ILogger<PublishBlogPlugin>>();
+    return new PublishBlogPlugin(logger);
 });
 
 // Register KernelService
@@ -104,4 +118,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+
 

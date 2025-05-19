@@ -3,8 +3,8 @@
 @using SemanticClip.Client.Services
 @using System.Net.WebSockets
 @using SemanticClip.Core.Models
-@using System.Text
 @using System.Text.Json
+@using System.Text
 @using MudBlazor
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Web
@@ -75,6 +75,27 @@
                 <MudText Typo="Typo.h6" Class="mb-2">Blog Post</MudText>
                 <MudMarkdown Value="@response.BlogPost" />
             </MudPaper>
+            
+            <MudPaper Class="pa-4 mt-4">
+                <MudText Typo="Typo.h6" Class="mb-2">MCP Publishing Options</MudText>
+                <MudTextField @bind-Value="mcpCommitMessage" Label="MCP Instructions" 
+                              Lines="3" />
+                <MudButton Variant="Variant.Filled" Color="Color.Secondary" 
+                           OnClick="@PublishBlogPostWithMcp" 
+                           Disabled="@isPublishing" 
+                           Class="mt-4" 
+                           StartIcon="@Icons.Material.Filled.Send">
+                    @if (isPublishing)
+                    {
+                        <MudProgressCircular Color="Color.Default" Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    }
+                    Submit with MCP
+                </MudButton>
+                @if (!string.IsNullOrEmpty(publishingMessage))
+                {
+                    <MudAlert Severity="@publishingAlertSeverity" Class="mt-2">@publishingMessage</MudAlert>
+                }
+            </MudPaper>
         }
     </MudPaper>
 </MudContainer>
@@ -85,10 +106,20 @@
     private string[] errors = Array.Empty<string>();
     private IBrowserFile? videoFile;
     private bool isProcessing;
+    private bool isPublishing;
     private VideoProcessingResponse? response;
     private int progress;
     private string currentOperation = string.Empty;
     private string errorMessage = string.Empty;
+    private string mcpCommitMessage = string.Empty;
+    private string publishingMessage = string.Empty;
+    private Severity publishingAlertSeverity = Severity.Info;
+    
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        mcpCommitMessage = $"Commit the blog post as a markdown to vicperdana/mcptest with commit message: Blog post published {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
+    }
 
     private void AssignSelectedFile(IBrowserFile? file)
     {
@@ -145,5 +176,80 @@
             "" => Color.Primary,
             _ => Color.Error
         };
+    }
+
+    private async Task PublishBlogPostWithMcp()
+    {
+        if (response?.BlogPost == null || string.IsNullOrEmpty(mcpCommitMessage))
+        {
+            publishingMessage = "Blog post or commit message is empty.";
+            publishingAlertSeverity = Severity.Warning;
+            return;
+        }
+        
+        try
+        {
+            isPublishing = true;
+            publishingMessage = "Publishing blog post...";
+            publishingAlertSeverity = Severity.Info;
+            await InvokeAsync(StateHasChanged);
+            
+            // Call the API to publish the blog post with progress updates
+            var result = await VideoProcessingApiClient.PublishBlogPostWithMcpAsync(
+                response.BlogPost ?? string.Empty,
+                mcpCommitMessage,
+                async (progress) =>
+                {
+                    publishingMessage = progress.CurrentOperation;
+                    publishingAlertSeverity = progress.Status switch
+                    {
+                        "Failed" => Severity.Error,
+                        "Completed" => Severity.Success,
+                        _ => Severity.Info
+                    };
+                    
+                    if (!string.IsNullOrEmpty(progress.Error))
+                    {
+                        publishingMessage = $"Error: {progress.Error}";
+                    }
+                    
+                    // If we have a result URL, add it to the message
+                    if (!string.IsNullOrEmpty(progress.Result))
+                    {
+                        publishingMessage += $"\n\nView on GitHub: {progress.Result}";
+                    }
+                    
+                    await InvokeAsync(StateHasChanged);
+                });
+            
+            // Update the UI based on the result
+            if (result.Success)
+            {
+                publishingMessage = result.Message ?? "Blog post published successfully!";
+                publishingAlertSeverity = Severity.Success;
+                
+                // If we have a result URL, add it to the message
+                if (!string.IsNullOrEmpty(result.Result))
+                {
+                    publishingMessage += $"\n\nView on GitHub: {result.Result}";
+                }
+            }
+            else
+            {
+                publishingMessage = result.Message ?? "Failed to publish blog post";
+                publishingAlertSeverity = Severity.Error;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error publishing blog post");
+            publishingMessage = $"Error publishing blog post: {ex.Message}";
+            publishingAlertSeverity = Severity.Error;
+        }
+        finally
+        {
+            isPublishing = false;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 }

@@ -6,6 +6,8 @@
 
 > **Note**: This is a proof of concept application and is not intended for production use. It demonstrates the integration of various AI technologies for video processing and content generation.
 
+**NEW**: Added GitHub with ModelContextProtocol (MCP) Integration
+
 **SemantiClip** is a powerful AI-driven tool that converts videos into structured content by transcribing audio and creating blog posts. Built with .NET, Semantic Kernel and Blazor WebAssembly, it delivers a fast, modern, and responsive user experience.
 
 
@@ -39,6 +41,7 @@
 - 💻 **Modern Web UI** – Built with .NET 9, Blazor WebAssembly, and MudBlazor.
 - 🧩 **Local Content Generation** – Supports on-device LLM processing with Ollama.
 - 🔍 **Semantic Kernel Integration** – Utilizes Semantic Kernel Process and Agent frameworks for enhanced context and orchestration.
+- 📗 **GitHub with ModelContextProtocol Integration** – Publishes blog posts directly to GitHub repositories with ModelContextProtocol.
 
 SemantiClip helps you do more with your video content—faster, smarter, and effortlessly.
 
@@ -53,6 +56,7 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
 * [Azure OpenAI](https://azure.microsoft.com/en-us/products/cognitive-services/openai-service)
 * [FFmpeg](https://ffmpeg.org/) - Media processing library
 * [Ollama](https://ollama.ai/) - Local LLM for content generation
+* [ModelContextProtocol](https://github.com/microsoft/ModelContextProtocol) - ModelContextProtocol for publishing blog posts to GitHub
 
 ## Getting Started
 
@@ -62,6 +66,7 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
 * Azure account with OpenAI service deployed
 * FFmpeg installed on the server
 * Ollama installed for local LLM processing
+* GitHub account with personal access token (for blog post publishing)
 
 ### Installation
 
@@ -88,7 +93,17 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
    ollama run phi4-mini
    ```
 
-4. Install FFmpeg
+4. Configure GitHub Integration
+   ```bash
+   # Create a GitHub personal access token with repo access - see more details [here](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token)
+   # Copy the generated token and add it to your appsettings.json 
+   
+   "GitHub": {
+    "PersonalAccessToken": "yourGitHubToken"
+  },
+   ```
+   
+5. Install FFmpeg
    ```bash
    # macOS
    brew install ffmpeg
@@ -146,6 +161,7 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
 3. Click "Process Video"
 4. Wait for the processing to complete
 5. View the generated transcript and blog post
+6. To publish the blog post to GitHub, edit the instructions with a repo that you have write access to and click "Submit with MCP"
 
 ## Roadmap
 
@@ -153,6 +169,7 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
 - [x] Implement FFmpeg for better audio extraction
 - [x] Use specialized models for different tasks
 - [x] Add support for multiple video formats
+- [x] Add GitHub with ModelContextProtocol Integration
 - [ ] Add export options (PDF, Word, etc.)
 - [ ] Implement user authentication
 - [ ] Run using dotnet aspire
