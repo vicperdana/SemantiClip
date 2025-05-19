@@ -97,10 +97,9 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
    ```bash
    # Create a GitHub personal access token with repo access - see more details [here](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token)
    # Copy the generated token and add it to your appsettings.json 
-   
    "GitHub": {
     "PersonalAccessToken": "yourGitHubToken"
-  },
+    },
    ```
    
 5. Install FFmpeg
