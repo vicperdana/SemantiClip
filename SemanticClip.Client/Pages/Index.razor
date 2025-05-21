@@ -3,6 +3,7 @@
 @using SemanticClip.Client.Services
 @using System.Net.WebSockets
 @using SemanticClip.Core.Models
+@using SemanticClip.Core.Enums
 @using System.Text.Json
 @using System.Text
 @using MudBlazor
@@ -11,6 +12,7 @@
 @inject HttpClient Http
 @inject ILogger<Index> Logger
 @inject VideoProcessingApiClient VideoProcessingApiClient
+@inject ExportService ExportService
 
 <PageTitle>SemanticClip - Video Processing</PageTitle>
 
@@ -66,6 +68,22 @@
             <MudPaper Class="pa-4 mt-4">
                 <MudText Typo="Typo.h6" Class="mb-2">Transcript</MudText>
                 <MudText>@response.Transcript</MudText>
+                
+                <MudDivider Class="my-4" />
+                
+                <MudText Typo="Typo.subtitle1" Class="mb-2">Export Transcript</MudText>
+                <MudGrid>
+                    <MudItem>
+                        <MudTooltip Text="Export as TXT">
+                            <MudButton Variant="Variant.Outlined" 
+                                     Color="Color.Secondary" 
+                                     StartIcon="@Icons.Material.Filled.TextSnippet" 
+                                     OnClick="@(() => ExportTranscript(ExportFormat.TXT))">
+                                TXT
+                            </MudButton>
+                        </MudTooltip>
+                    </MudItem>
+                </MudGrid>
             </MudPaper>
         }
 
@@ -74,6 +92,52 @@
             <MudPaper Class="pa-4 mt-4">
                 <MudText Typo="Typo.h6" Class="mb-2">Blog Post</MudText>
                 <MudMarkdown Value="@response.BlogPost" />
+                
+                <MudDivider Class="my-4" />
+                
+                <MudText Typo="Typo.subtitle1" Class="mb-2">Export Options</MudText>
+                <MudGrid>
+                    <MudItem>
+                        <MudTooltip Text="Export as PDF">
+                            <MudButton Variant="Variant.Outlined" 
+                                      Color="Color.Primary" 
+                                      StartIcon="@Icons.Material.Filled.PictureAsPdf" 
+                                      OnClick="@(() => ExportContent(ExportFormat.PDF))">
+                                PDF
+                            </MudButton>
+                        </MudTooltip>
+                    </MudItem>
+                    <MudItem>
+                        <MudTooltip Text="Export as DOCX">
+                            <MudButton Variant="Variant.Outlined" 
+                                      Color="Color.Primary" 
+                                      StartIcon="@Icons.Material.Filled.Description" 
+                                      OnClick="@(() => ExportContent(ExportFormat.DOCX))">
+                                DOCX
+                            </MudButton>
+                        </MudTooltip>
+                    </MudItem>
+                    <MudItem>
+                        <MudTooltip Text="Export as TXT">
+                            <MudButton Variant="Variant.Outlined" 
+                                      Color="Color.Primary" 
+                                      StartIcon="@Icons.Material.Filled.TextSnippet" 
+                                      OnClick="@(() => ExportContent(ExportFormat.TXT))">
+                                TXT
+                            </MudButton>
+                        </MudTooltip>
+                    </MudItem>
+                    <MudItem>
+                        <MudTooltip Text="Export as HTML">
+                            <MudButton Variant="Variant.Outlined" 
+                                      Color="Color.Primary" 
+                                      StartIcon="@Icons.Material.Filled.Code" 
+                                      OnClick="@(() => ExportContent(ExportFormat.HTML))">
+                                HTML
+                            </MudButton>
+                        </MudTooltip>
+                    </MudItem>
+                </MudGrid>
             </MudPaper>
             
             <MudPaper Class="pa-4 mt-4">
@@ -107,6 +171,7 @@
     private IBrowserFile? videoFile;
     private bool isProcessing;
     private bool isPublishing;
+    private bool isExporting;
     private VideoProcessingResponse? response;
     private int progress;
     private string currentOperation = string.Empty;
@@ -249,6 +314,62 @@
         finally
         {
             isPublishing = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+    
+    private async Task ExportContent(ExportFormat format)
+    {
+        if (response == null || string.IsNullOrEmpty(response.BlogPost))
+        {
+            return;
+        }
+        
+        try
+        {
+            isExporting = true;
+            await InvokeAsync(StateHasChanged);
+            
+            string fileName = $"SemantiClip_BlogPost_{DateTime.Now:yyyyMMdd_HHmmss}";
+            string content = response.BlogPost;
+            
+            await ExportService.ExportContentAsync(content, fileName, format);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error exporting content");
+        }
+        finally
+        {
+            isExporting = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+    
+    private async Task ExportTranscript(ExportFormat format)
+    {
+        if (response == null || string.IsNullOrEmpty(response.Transcript))
+        {
+            return;
+        }
+        
+        try
+        {
+            isExporting = true;
+            await InvokeAsync(StateHasChanged);
+            
+            string fileName = $"SemantiClip_Transcript_{DateTime.Now:yyyyMMdd_HHmmss}";
+            string content = response.Transcript;
+            
+            await ExportService.ExportContentAsync(content, fileName, format);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error exporting transcript");
+        }
+        finally
+        {
+            isExporting = false;
             await InvokeAsync(StateHasChanged);
         }
     }

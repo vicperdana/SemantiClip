@@ -40,4 +40,7 @@ builder.Services.AddMudMarkdownServices();
 // Register VideoProcessingApiClient
 builder.Services.AddScoped<VideoProcessingApiClient>();
 
+// Register ExportService
+builder.Services.AddScoped<ExportService>();
+
 await builder.Build().RunAsync();

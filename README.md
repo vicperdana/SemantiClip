@@ -42,6 +42,7 @@
 - 🧩 **Local Content Generation** – Supports on-device LLM processing with Ollama.
 - 🔍 **Semantic Kernel Integration** – Utilizes Semantic Kernel Process and Agent frameworks for enhanced context and orchestration.
 - 📗 **GitHub with ModelContextProtocol Integration** – Publishes blog posts directly to GitHub repositories with ModelContextProtocol.
+- 📤 **Export Options** – Export content to multiple formats including PDF, DOCX, TXT, and HTML.
 
 SemantiClip helps you do more with your video content—faster, smarter, and effortlessly.
 
@@ -160,7 +161,8 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
 3. Click "Process Video"
 4. Wait for the processing to complete
 5. View the generated transcript and blog post
-6. To publish the blog post to GitHub, edit the instructions with a repo that you have write access to and click "Submit with MCP"
+6. Export content to various formats (PDF, DOCX, TXT, HTML)
+7. To publish the blog post to GitHub, edit the instructions with a repo that you have write access to and click "Submit with MCP"
 
 ## Roadmap
 
@@ -169,7 +171,7 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
 - [x] Use specialized models for different tasks
 - [x] Add support for multiple video formats
 - [x] Add GitHub with ModelContextProtocol Integration
-- [ ] Add export options (PDF, Word, etc.)
+- [x] Add export options (PDF, Word, etc.)
 - [ ] Implement user authentication
 - [ ] Run using dotnet aspire
 - [ ] Add unit tests and integration tests
