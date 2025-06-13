@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: semanticlip
+metadata:
+  template: semanticlip@0.0.1-beta
+summary: AI-powered tool that transforms video content into structured written formats
+description: |
+  SemantiClip is an AI-powered tool that transforms video content into structured written formats. 
+  Designed for content creators and educators, it automates transcription and blog post creation—making 
+  it easier than ever to repurpose video content.
+
+services:
+  api:
+    project: ./src/SemanticClip.API
+    language: dotnet
+    host: containerapp
+
+hooks:
+  predeploy:
+    posix:
+      shell: sh
+      run: echo "Starting SemantiClip deployment..."
+    windows:
+      shell: pwsh
+      run: echo "Starting SemantiClip deployment..."
+  
+  postdeploy:
+    posix:
+      shell: sh
+      run: echo "SemantiClip deployment completed successfully!"
+    windows:
+      shell: pwsh
+      run: echo "SemantiClip deployment completed successfully!"

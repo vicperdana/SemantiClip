@@ -1,0 +1,255 @@
+@page "/"
+@using SemanticClip.Core
+@using SemanticClip.Client.Services
+@using System.Net.WebSockets
+@using SemanticClip.Core.Models
+@using System.Text.Json
+@using System.Text
+@using MudBlazor
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+@inject HttpClient Http
+@inject ILogger<Index> Logger
+@inject VideoProcessingApiClient VideoProcessingApiClient
+
+<PageTitle>SemanticClip - Video Processing</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudPaper Class="pa-4">
+        <div class="text-center mb-4">
+            <img src="images/SemantiClip-app.png" alt="SemantiClip Logo" style="max-width: 200px; height: auto;" />
+        </div>
+        <MudText Typo="Typo.h4" Class="mb-4">Video Processing</MudText>
+        
+        <MudTabs>
+            <MudTabPanel Text="Upload Video">
+                <MudPaper Class="pa-4 mt-4">
+                    <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+                        <MudFileUpload T="IBrowserFile" FilesChanged="AssignSelectedFile">
+                            <ActivatorContent>
+                                <MudFab Color="Color.Success"
+                                        StartIcon="@Icons.Material.Filled.AttachFile" />
+                            </ActivatorContent>
+                        </MudFileUpload>
+                        @if (videoFile != null)
+                        {
+                            <MudText Class="mt-2">Selected file: @videoFile.Name</MudText>
+                        }
+                    </MudForm>
+
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@ProcessVideo" Disabled="@isProcessing" Class="mt-4">
+                        @if (isProcessing)
+                        {
+                            <MudProgressCircular Color="Color.Default" Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                        }
+                        Process Video
+                    </MudButton>
+                </MudPaper>
+            </MudTabPanel>
+        </MudTabs>
+
+        @if (isProcessing)
+        {
+            <MudPaper Class="pa-4 mt-4">
+                <MudText Typo="Typo.h6" Class="mb-2">Processing Progress</MudText>
+                <MudProgressLinear Value="@progress" Color="@GetProgressColor()" Class="mb-2" />
+                <MudText>@currentOperation</MudText>
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <MudAlert Severity="Severity.Error" Class="mt-2">@errorMessage</MudAlert>
+                }
+            </MudPaper>
+        }
+
+        @if (!string.IsNullOrEmpty(response?.Transcript))
+        {
+            <MudPaper Class="pa-4 mt-4">
+                <MudText Typo="Typo.h6" Class="mb-2">Transcript</MudText>
+                <MudText>@response.Transcript</MudText>
+            </MudPaper>
+        }
+
+        @if (!string.IsNullOrEmpty(response?.BlogPost))
+        {
+            <MudPaper Class="pa-4 mt-4">
+                <MudText Typo="Typo.h6" Class="mb-2">Blog Post</MudText>
+                <MudMarkdown Value="@response.BlogPost" />
+            </MudPaper>
+            
+            <MudPaper Class="pa-4 mt-4">
+                <MudText Typo="Typo.h6" Class="mb-2">MCP Publishing Options</MudText>
+                <MudTextField @bind-Value="mcpCommitMessage" Label="MCP Instructions" 
+                              Lines="3" />
+                <MudButton Variant="Variant.Filled" Color="Color.Secondary" 
+                           OnClick="@PublishBlogPostWithMcp" 
+                           Disabled="@isPublishing" 
+                           Class="mt-4" 
+                           StartIcon="@Icons.Material.Filled.Send">
+                    @if (isPublishing)
+                    {
+                        <MudProgressCircular Color="Color.Default" Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    }
+                    Submit with MCP
+                </MudButton>
+                @if (!string.IsNullOrEmpty(publishingMessage))
+                {
+                    <MudAlert Severity="@publishingAlertSeverity" Class="mt-2">@publishingMessage</MudAlert>
+                }
+            </MudPaper>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private MudForm? form;
+    private bool success;
+    private string[] errors = Array.Empty<string>();
+    private IBrowserFile? videoFile;
+    private bool isProcessing;
+    private bool isPublishing;
+    private VideoProcessingResponse? response;
+    private int progress;
+    private string currentOperation = string.Empty;
+    private string errorMessage = string.Empty;
+    private string mcpCommitMessage = string.Empty;
+    private string publishingMessage = string.Empty;
+    private Severity publishingAlertSeverity = Severity.Info;
+    
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        mcpCommitMessage = $"Commit the blog post as a markdown to vicperdana/mcptest with commit message: Blog post published {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
+    }
+
+    private void AssignSelectedFile(IBrowserFile? file)
+    {
+        videoFile = file;
+    }
+
+    private async Task ProcessVideo()
+    {
+        if (videoFile == null)
+        {
+            return;
+        }
+
+        isProcessing = true;
+        progress = 0;
+        currentOperation = "Initializing";
+        errorMessage = string.Empty;
+        response = null;
+
+        try
+        {
+            await VideoProcessingApiClient.ProcessVideoAsync(videoFile, async (progressUpdate) =>
+            {
+                progress = progressUpdate.Percentage;
+                currentOperation = progressUpdate.CurrentOperation;
+                errorMessage = progressUpdate.Error ?? string.Empty;
+
+                if (progressUpdate.Status == "Completed")
+                {
+                    response = progressUpdate.Result;
+                    isProcessing = false;
+                }
+                else if (progressUpdate.Status == "Failed" || !string.IsNullOrEmpty(progressUpdate.Error))
+                {
+                    errorMessage = progressUpdate.Error ?? "Unknown error occurred.";
+                    isProcessing = false;
+                }
+                await InvokeAsync(StateHasChanged);
+            });
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error processing video");
+            isProcessing = false;
+            errorMessage = ex.Message;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private Color GetProgressColor()
+    {
+        return errorMessage switch
+        {
+            "" => Color.Primary,
+            _ => Color.Error
+        };
+    }
+
+    private async Task PublishBlogPostWithMcp()
+    {
+        if (response?.BlogPost == null || string.IsNullOrEmpty(mcpCommitMessage))
+        {
+            publishingMessage = "Blog post or commit message is empty.";
+            publishingAlertSeverity = Severity.Warning;
+            return;
+        }
+        
+        try
+        {
+            isPublishing = true;
+            publishingMessage = "Publishing blog post...";
+            publishingAlertSeverity = Severity.Info;
+            await InvokeAsync(StateHasChanged);
+            
+            // Call the API to publish the blog post with progress updates
+            var result = await VideoProcessingApiClient.PublishBlogPostWithMcpAsync(
+                response.BlogPost ?? string.Empty,
+                mcpCommitMessage,
+                async (progress) =>
+                {
+                    publishingMessage = progress.CurrentOperation;
+                    publishingAlertSeverity = progress.Status switch
+                    {
+                        "Failed" => Severity.Error,
+                        "Completed" => Severity.Success,
+                        _ => Severity.Info
+                    };
+                    
+                    if (!string.IsNullOrEmpty(progress.Error))
+                    {
+                        publishingMessage = $"Error: {progress.Error}";
+                    }
+                    
+                    // If we have a result URL, add it to the message
+                    if (!string.IsNullOrEmpty(progress.Result))
+                    {
+                        publishingMessage += $"\n\nView on GitHub: {progress.Result}";
+                    }
+                    
+                    await InvokeAsync(StateHasChanged);
+                });
+            
+            // Update the UI based on the result
+            if (result.Success)
+            {
+                publishingMessage = result.Message ?? "Blog post published successfully!";
+                publishingAlertSeverity = Severity.Success;
+                
+                // If we have a result URL, add it to the message
+                if (!string.IsNullOrEmpty(result.Result))
+                {
+                    publishingMessage += $"\n\nView on GitHub: {result.Result}";
+                }
+            }
+            else
+            {
+                publishingMessage = result.Message ?? "Failed to publish blog post";
+                publishingAlertSeverity = Severity.Error;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error publishing blog post");
+            publishingMessage = $"Error publishing blog post: {ex.Message}";
+            publishingAlertSeverity = Severity.Error;
+        }
+        finally
+        {
+            isPublishing = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+}

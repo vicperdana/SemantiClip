@@ -149,6 +149,132 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
    dotnet run
    ```
 
+## Deploy to Azure Container Apps
+
+SemantiClip can be easily deployed to Azure Container Apps using the Azure Developer CLI (azd). This provides a scalable, serverless container hosting solution with built-in monitoring and secrets management.
+
+### Prerequisites for Azure Deployment
+
+* Azure subscription
+* [Azure Developer CLI (azd)](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/install-azd) installed
+* [Docker](https://docs.docker.com/get-docker/) installed (for local testing)
+
+### Quick Deploy
+
+1. **Clone and navigate to the repository**
+   ```bash
+   git clone https://github.com/vicperdana/SemantiClip.git
+   cd SemantiClip
+   ```
+
+2. **Initialize azd environment**
+   ```bash
+   azd init
+   # When prompted, select "semanticlip" as the template
+   ```
+
+3. **Login to Azure**
+   ```bash
+   azd auth login
+   ```
+
+4. **Deploy to Azure**
+   ```bash
+   azd up
+   ```
+   
+   This single command will:
+   - Provision all required Azure resources (Container Apps, Key Vault, Log Analytics, etc.)
+   - Build and push the container image
+   - Deploy the application
+   - Configure environment variables and secrets
+
+### Configure Application Settings
+
+After deployment, you'll need to configure the application secrets in Azure Key Vault:
+
+1. **Set Azure OpenAI configuration**
+   ```bash
+   azd env set AzureOpenAI__Endpoint "https://your-openai-service.openai.azure.com/"
+   azd env set AzureOpenAI__WhisperDeploymentName "whisper"
+   azd env set AzureOpenAI__ContentDeploymentName "gpt-4o"
+   ```
+
+2. **Add secrets to Key Vault** (via Azure portal or CLI)
+   - `AzureOpenAIKey`: Your Azure OpenAI API key
+   - `GitHubPersonalAccessToken`: GitHub PAT for blog publishing
+   - `AzureAIAgentConnectionString`: Azure AI Agent connection string
+
+3. **Update deployment with new settings**
+   ```bash
+   azd deploy
+   ```
+
+### Monitoring and Logs
+
+- **Application Insights**: Monitor application performance and issues
+- **Log Analytics**: View detailed application logs
+- **Azure Portal**: Access via the Container Apps resource
+
+### Custom Configuration
+
+You can customize the deployment by modifying:
+- `azure.yaml`: Service configuration and hooks
+- `infra/main.bicep`: Infrastructure as code (Bicep templates)
+- `src/SemanticClip.API/Dockerfile`: Container configuration
+
+### GitHub Actions CI/CD
+
+The repository includes a GitHub Actions workflow (`.github/workflows/azure-dev.yml`) for automated deployment:
+
+1. **Set up GitHub secrets**:
+   - `AZURE_CREDENTIALS`: Service principal credentials
+   - Or configure federated identity with `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`
+
+2. **Set up GitHub variables**:
+   - `AZURE_ENV_NAME`: Your environment name
+   - `AZURE_LOCATION`: Azure region (e.g., "eastus")
+   - `AZURE_SUBSCRIPTION_ID`: Your Azure subscription ID
+
+3. **Automatic deployment**: Push to main branch triggers deployment
+
+### Scaling and Performance
+
+Azure Container Apps automatically scales based on:
+- HTTP requests (configured for 50 concurrent requests per replica)
+- CPU and memory usage
+- Custom scaling rules (can be added via Bicep templates)
+
+**Resource allocation per replica:**
+- CPU: 0.5 cores
+- Memory: 1.0 GB
+- Min replicas: 1
+- Max replicas: 10
+
+### Troubleshooting
+
+1. **Check deployment logs**
+   ```bash
+   azd logs
+   ```
+
+2. **Verify environment variables**
+   ```bash
+   azd env get-values
+   ```
+
+3. **Access container logs**
+   ```bash
+   az containerapp logs show \
+     --name <container-app-name> \
+     --resource-group <resource-group-name>
+   ```
+
+4. **Common issues**:
+   - Ensure all required secrets are set in Key Vault
+   - Verify Azure OpenAI service deployment names match configuration
+   - Check that the container registry has the latest image
+
 ## Usage
 
 <p align="left">
