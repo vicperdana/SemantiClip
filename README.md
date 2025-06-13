@@ -19,6 +19,8 @@
   - [Getting Started](#getting-started)
     - [Prerequisites](#prerequisites)
     - [Installation](#installation)
+      - [Option 1: Local Development](#option-1-local-development)
+      - [Option 2: Deploy to Azure App Service using Azure Developer CLI (azd)](#option-2-deploy-to-azure-app-service-using-azure-developer-cli-azd)
   - [Usage](#usage)
   - [Roadmap](#roadmap)
   - [Contributing](#contributing)
@@ -57,6 +59,18 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
 * [FFmpeg](https://ffmpeg.org/) - Media processing library
 * [Ollama](https://ollama.ai/) - Local LLM for content generation
 * [ModelContextProtocol](https://github.com/microsoft/ModelContextProtocol) - ModelContextProtocol for publishing blog posts to GitHub
+* [Azure App Service](https://azure.microsoft.com/en-us/products/app-service/) - Cloud hosting platform
+* [Azure Developer CLI (azd)](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/overview) - Developer CLI for Azure deployment
+
+## Getting Started
+
+### Prerequisites
+
+* .NET 9 SDK
+* Azure account with OpenAI service deployed
+* FFmpeg installed on the server
+* Ollama installed for local LLM processing
+* GitHub account with personal access token (for blog post publishing)
 
 ## Getting Started
 
@@ -69,6 +83,8 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
 * GitHub account with personal access token (for blog post publishing)
 
 ### Installation
+
+#### Option 1: Local Development
 
 1. Clone the repo
    ```bash
@@ -114,13 +130,13 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
    # Download from https://ffmpeg.org/download.html and add to PATH
    ```
 
-5. Configure Azure OpenAI Services
+6. Configure Azure OpenAI Services
    - Set up Azure OpenAI service
    - Deploy Whisper model for transcription (recommended: whisper)
    - Deploy GPT-4o model for content generation (recommended: gpt-4o)
    - Add your API keys and deployment names to the configuration
 
-6. Configure `appsettings.Development.json` under the SemanticClip.API project
+7. Configure `appsettings.Development.json` under the SemanticClip.API project
    ```json
    {
      "AzureOpenAI": {
@@ -139,7 +155,7 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
    }
    ```
 
-7. Run the application
+8. Run the application
    ```bash
    cd SemanticClip.API
    dotnet run
@@ -148,6 +164,71 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
    cd SemanticClip.Client
    dotnet run
    ```
+
+#### Option 2: Deploy to Azure App Service using Azure Developer CLI (azd)
+
+**Prerequisites:**
+- [Azure Developer CLI (azd)](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd)
+- Azure subscription with sufficient permissions to create resources
+- Azure OpenAI service already deployed with Whisper and GPT-4o models
+
+**Quick Deployment:**
+
+1. Clone and navigate to the repository
+   ```bash
+   git clone https://github.com/vicperdana/SemantiClip.git
+   cd SemantiClip
+   ```
+
+2. Initialize the Azure Developer CLI environment
+   ```bash
+   azd init
+   ```
+
+3. Set required environment variables
+   ```bash
+   # Azure OpenAI Configuration
+   azd env set AZURE_OPENAI_ENDPOINT "https://your-service.openai.azure.com/"
+   azd env set AZURE_OPENAI_API_KEY "your-api-key"
+   azd env set AZURE_OPENAI_WHISPER_DEPLOYMENT_NAME "whisper"
+   azd env set AZURE_OPENAI_CONTENT_DEPLOYMENT_NAME "gpt-4o"
+   
+   # Azure AI Agent Configuration (if using Azure AI Foundry)
+   azd env set AZURE_AI_AGENT_CONNECTION_STRING "your-connection-string"
+   azd env set AZURE_AI_AGENT_CHAT_MODEL_ID "gpt-4o"
+   
+   # GitHub Integration (optional)
+   azd env set GITHUB_PERSONAL_ACCESS_TOKEN "your-github-token"
+   ```
+
+4. Deploy to Azure
+   ```bash
+   azd up
+   ```
+
+   This single command will:
+   - Provision all required Azure resources (Resource Group, App Service Plan, App Service, Key Vault, Application Insights)
+   - Build and deploy the SemantiClip API
+   - Configure all environment variables and app settings
+
+5. Access your deployed application
+   The deployment will output the URL of your deployed API. The format will be:
+   ```
+   https://app-api-[unique-id].azurewebsites.net
+   ```
+
+**Managing Environment Variables:**
+
+You can update environment variables anytime using:
+```bash
+azd env set VARIABLE_NAME "new-value"
+azd deploy  # Re-deploy to apply changes
+```
+
+**Monitoring and Logs:**
+- View logs and metrics in the Azure portal under Application Insights
+- Access App Service logs via Azure portal or Azure CLI
+- Monitor health and performance through the integrated monitoring dashboard
 
 ## Usage
 
@@ -169,6 +250,7 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
 - [x] Use specialized models for different tasks
 - [x] Add support for multiple video formats
 - [x] Add GitHub with ModelContextProtocol Integration
+- [x] Add Azure App Service deployment with Azure Developer CLI (azd)
 - [ ] Add export options (PDF, Word, etc.)
 - [ ] Implement user authentication
 - [ ] Run using dotnet aspire

@@ -13,6 +13,43 @@ param location string
 @description('Id of the user or app to assign application roles')
 param principalId string = ''
 
+// Configuration parameters
+@description('Azure OpenAI endpoint')
+param azureOpenAiEndpoint string = ''
+
+@description('Azure OpenAI API key')
+@secure()
+param azureOpenAiApiKey string = ''
+
+@description('Azure OpenAI Whisper deployment name')
+param azureOpenAiWhisperDeploymentName string = 'whisper'
+
+@description('Azure OpenAI content deployment name')
+param azureOpenAiContentDeploymentName string = 'gpt-4o'
+
+@description('Azure AI Agent connection string')
+@secure()
+param azureAiAgentConnectionString string = ''
+
+@description('Azure AI Agent chat model ID')
+param azureAiAgentChatModelId string = 'gpt-4o'
+
+@description('Azure AI Agent vector store ID')
+param azureAiAgentVectorStoreId string = 'semanticclipproject'
+
+@description('Azure AI Agent max evaluations')
+param azureAiAgentMaxEvaluations string = '3'
+
+@description('GitHub personal access token')
+@secure()
+param githubPersonalAccessToken string = ''
+
+@description('File upload max request body size in bytes')
+param fileUploadMaxRequestBodySizeInBytes string = '30000000'
+
+@description('File upload allowed extensions')
+param fileUploadAllowedExtensions string = '.mp4,.avi,.mov,.wmv,.mkv'
+
 // Variables
 var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
@@ -81,6 +118,35 @@ module api './core/host/appservice.bicep' = {
       APPLICATIONINSIGHTS_CONNECTION_STRING: monitoring.outputs.applicationInsightsConnectionString
       ApplicationInsights__ConnectionString: monitoring.outputs.applicationInsightsConnectionString
       AzureKeyVault__VaultUri: keyVault.outputs.endpoint
+      
+      // Azure OpenAI Configuration
+      AzureOpenAI__Endpoint: azureOpenAiEndpoint
+      AzureOpenAI__ApiKey: azureOpenAiApiKey
+      AzureOpenAI__WhisperDeploymentName: azureOpenAiWhisperDeploymentName
+      AzureOpenAI__ContentDeploymentName: azureOpenAiContentDeploymentName
+      AzureOpenAI__UseKeyVault: 'false'
+      
+      // Azure AI Agent Configuration
+      AzureAIAgent__ConnectionString: azureAiAgentConnectionString
+      AzureAIAgent__ChatModelId: azureAiAgentChatModelId
+      AzureAIAgent__VectorStoreId: azureAiAgentVectorStoreId
+      AzureAIAgent__MaxEvaluations: azureAiAgentMaxEvaluations
+      
+      // GitHub Configuration
+      GitHub__PersonalAccessToken: githubPersonalAccessToken
+      
+      // File Upload Configuration
+      FileUpload__MaxRequestBodySizeInBytes: fileUploadMaxRequestBodySizeInBytes
+      FileUpload__AllowedExtensions: fileUploadAllowedExtensions
+      
+      // FFmpeg Configuration
+      FFmpeg__Path: 'ffmpeg'
+      FFmpeg__TimeoutMinutes: '10'
+      FFmpeg__AudioSampleRate: '16000'
+      FFmpeg__AudioChannels: '1'
+      
+      // CORS Configuration
+      Cors__AllowedOrigins__0: 'https://${abbrs.webSitesAppService}api-${resourceToken}.azurewebsites.net'
     }
     keyVaultName: keyVault.outputs.name
   }

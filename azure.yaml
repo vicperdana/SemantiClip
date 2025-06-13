@@ -18,3 +18,26 @@ workflows:
 
 infra:
   provider: bicep
+  parameters:
+    azureOpenAiEndpoint:
+      value: "{{ .Env.AZURE_OPENAI_ENDPOINT }}"
+    azureOpenAiApiKey:
+      value: "{{ .Env.AZURE_OPENAI_API_KEY }}"
+    azureOpenAiWhisperDeploymentName:
+      value: "{{ .Env.AZURE_OPENAI_WHISPER_DEPLOYMENT_NAME }}"
+    azureOpenAiContentDeploymentName:
+      value: "{{ .Env.AZURE_OPENAI_CONTENT_DEPLOYMENT_NAME }}"
+    azureAiAgentConnectionString:
+      value: "{{ .Env.AZURE_AI_AGENT_CONNECTION_STRING }}"
+    azureAiAgentChatModelId:
+      value: "{{ .Env.AZURE_AI_AGENT_CHAT_MODEL_ID }}"
+    azureAiAgentVectorStoreId:
+      value: "{{ .Env.AZURE_AI_AGENT_VECTOR_STORE_ID }}"
+    azureAiAgentMaxEvaluations:
+      value: "{{ .Env.AZURE_AI_AGENT_MAX_EVALUATIONS }}"
+    githubPersonalAccessToken:
+      value: "{{ .Env.GITHUB_PERSONAL_ACCESS_TOKEN }}"
+    fileUploadMaxRequestBodySizeInBytes:
+      value: "{{ .Env.FILE_UPLOAD_MAX_REQUEST_BODY_SIZE_IN_BYTES }}"
+    fileUploadAllowedExtensions:
+      value: "{{ .Env.FILE_UPLOAD_ALLOWED_EXTENSIONS }}"

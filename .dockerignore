@@ -1,0 +1,49 @@
+# .NET build artifacts
+**/bin/
+**/obj/
+**/out/
+
+# IDE files
+**/.vscode/
+**/.vs/
+**/.idea/
+
+# Git files
+.git/
+.gitignore
+
+# Docker files
+Dockerfile
+.dockerignore
+
+# Documentation
+README.md
+docs/
+
+# Package files
+*.nupkg
+*.snupkg
+
+# Test results
+TestResults/
+
+# Coverage reports
+coverage/
+
+# Local environment files
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Temporary folders
+tmp/
+temp/
