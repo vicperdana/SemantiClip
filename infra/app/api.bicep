@@ -12,6 +12,7 @@ param containerRegistryName string
 param keyVaultName string
 
 @description('Application Insights connection string')
+@secure()
 param applicationInsightsConnectionString string
 
 @description('Specifies if the resource already exists')
@@ -56,11 +57,6 @@ resource apiContainerApp 'Microsoft.App/containerApps@2022-03-01' = {
         external: true
         targetPort: 8080
         transport: 'auto'
-        corsPolicy: {
-          allowedOrigins: ['*']
-          allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
-          allowedHeaders: ['*']
-        }
       }
       registries: [
         {

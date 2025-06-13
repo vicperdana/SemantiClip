@@ -7,10 +7,10 @@ param principalId string
 
 @description('The pricing tier of the vault')
 @allowed([
-  'Premium'
-  'Standard'
+  'premium'
+  'standard'
 ])
-param sku string = 'Standard'
+param sku string = 'standard'
 
 @description('Specifies whether the vault is enabled for deployment scripts')
 param enabledForDeployment bool = false
