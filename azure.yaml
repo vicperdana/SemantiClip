@@ -3,6 +3,13 @@
 name: semanticlip
 metadata:
   template: semanticlip@0.0.1-beta
+
+infra:
+  parameters:
+    azureOpenAiEndpoint: "${AZURE_OPENAI_ENDPOINT}"
+    azureOpenAiApiKey: "${AZURE_OPENAI_API_KEY}"
+    azureAiAgentConnectionString: "${AZURE_AI_AGENT_CONNECTION_STRING}"
+    gitHubPersonalAccessToken: "${GITHUB_PERSONAL_ACCESS_TOKEN}"
   
 services:
   api:
