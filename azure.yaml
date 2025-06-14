@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: semanticlip
+metadata:
+  template: semanticlip@0.0.1-beta
+  
+services:
+  api:
+    project: ./SemanticClip.API
+    host: appservice
+    language: dotnet
+    
+  web:
+    project: ./SemanticClip.Client  
+    host: appservice
+    language: dotnet
+
+hooks:
+  postprovision:
+    shell: sh
+    run: |
+      echo "Setting up application configuration..."
+      azd env set azureAiAgentMaxEvaluations 3
+      azd env set azureAiAgentChatModelId gpt-4o
+      azd env set azureOpenAiContentDeploymentName gpt-4o
+      azd env set azureOpenAiWhisperDeploymentName whisper
+      azd env set fileUploadMaxRequestBodySizeInBytes 30000000
+      azd env set fileUploadAllowedExtensions ".mp4,.avi,.mov,.wmv,.mkv"
+      echo "Configuration completed successfully."
