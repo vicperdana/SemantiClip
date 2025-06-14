@@ -415,3 +415,6 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 
+# Azure Developer CLI
+.azure/
+
