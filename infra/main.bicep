@@ -86,7 +86,7 @@ module api './core/host/appservice.bicep' = {
     tags: union(tags, { 'azd-service-name': 'api' })
     appServicePlanId: appServicePlan.outputs.id
     runtimeName: 'dotnetcore'
-    runtimeVersion: '9.0'
+    runtimeVersion: '8.0'
     appSettings: {
       AzureAIAgent__MaxEvaluations: azureAiAgentMaxEvaluations
       AzureAIAgent__ChatModelId: azureAiAgentChatModelId
@@ -110,7 +110,7 @@ module web './core/host/appservice.bicep' = {
     tags: union(tags, { 'azd-service-name': 'web' })
     appServicePlanId: appServicePlan.outputs.id
     runtimeName: 'dotnetcore'
-    runtimeVersion: '9.0'
+    runtimeVersion: '8.0'
     appSettings: {
       ApiBaseAddress: 'https://${api.outputs.uri}'
       APPLICATIONINSIGHTS_CONNECTION_STRING: monitoring.outputs.applicationInsightsConnectionString

@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.1.42791",
-      "templateHash": "10636754369524907564"
+      "templateHash": "12706311702880807588"
     }
   },
   "parameters": {
@@ -462,7 +462,7 @@
             "value": "dotnetcore"
           },
           "runtimeVersion": {
-            "value": "9.0"
+            "value": "8.0"
           },
           "appSettings": {
             "value": {
@@ -594,7 +594,7 @@
             "value": "dotnetcore"
           },
           "runtimeVersion": {
-            "value": "9.0"
+            "value": "8.0"
           },
           "appSettings": {
             "value": {

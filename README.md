@@ -19,6 +19,13 @@
   - [Getting Started](#getting-started)
     - [Prerequisites](#prerequisites)
     - [Installation](#installation)
+  - [Azure Deployment](#azure-deployment)
+    - [Prerequisites for Azure Deployment](#prerequisites-for-azure-deployment)
+    - [Deployment Steps](#deployment-steps)
+    - [Environment Configuration](#environment-configuration)
+    - [Required Azure Services Configuration](#required-azure-services-configuration)
+    - [Monitoring and Logs](#monitoring-and-logs)
+    - [Scaling and Performance](#scaling-and-performance)
   - [Usage](#usage)
   - [Roadmap](#roadmap)
   - [Contributing](#contributing)
@@ -148,6 +155,92 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
    cd SemanticClip.Client
    dotnet run
    ```
+
+## Azure Deployment
+
+SemantiClip can be easily deployed to Azure App Service using the Azure Developer CLI (azd) for a one-command deployment experience.
+
+### Prerequisites for Azure Deployment
+
+- [Azure Developer CLI (azd)](https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/install-azd)
+- [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
+- An Azure subscription
+
+### Deployment Steps
+
+1. **Clone and navigate to the repository**
+   ```bash
+   git clone https://github.com/vicperdana/SemantiClip.git
+   cd SemantiClip
+   ```
+
+2. **Login to Azure**
+   ```bash
+   azd auth login
+   ```
+
+3. **Initialize the environment** (first time only)
+   ```bash
+   azd init
+   ```
+
+4. **Deploy to Azure**
+   ```bash
+   azd up
+   ```
+
+   This command will:
+   - Provision Azure resources (Resource Group, App Service Plan, App Services, Application Insights)
+   - Deploy both the API and web application
+   - Configure environment variables with default values
+
+### Environment Configuration
+
+The deployment automatically configures the following default values:
+- `azureAiAgentMaxEvaluations`: 3
+- `azureAiAgentChatModelId`: gpt-4o
+- `azureOpenAiContentDeploymentName`: gpt-4o
+- `azureOpenAiWhisperDeploymentName`: whisper
+- `fileUploadMaxRequestBodySizeInBytes`: 30000000
+- `fileUploadAllowedExtensions`: .mp4,.avi,.mov,.wmv,.mkv
+
+To customize these values, use:
+```bash
+azd env set <KEY> <VALUE>
+azd up
+```
+
+### Required Azure Services Configuration
+
+After deployment, you'll need to configure the following Azure services manually:
+
+1. **Azure OpenAI Service**
+   - Create an Azure OpenAI resource
+   - Deploy required models (gpt-4o for content generation, whisper for transcription)
+   - Update the app settings with your endpoints and keys
+
+2. **Azure AI Agent (Optional)**
+   - Set up Azure AI Foundry project
+   - Configure the connection string in app settings
+
+3. **GitHub Integration (Optional)**
+   - Generate a GitHub Personal Access Token
+   - Configure it in the app settings for blog publishing
+
+### Monitoring and Logs
+
+- **Application Insights**: Automatically configured for monitoring and logging
+- **Azure Portal**: Access logs and metrics through the Azure portal
+- **Live Logs**: Use `az webapp log tail` for real-time log monitoring
+
+### Scaling and Performance
+
+The deployment uses:
+- **App Service Plan**: Basic (B1) tier - suitable for development/testing
+- **Linux containers**: For optimal .NET performance
+- **Application Insights**: For performance monitoring
+
+For production workloads, consider upgrading to Standard or Premium tiers.
 
 ## Usage
 
