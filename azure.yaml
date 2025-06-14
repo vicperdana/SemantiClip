@@ -16,6 +16,32 @@ services:
     language: dotnet
 
 hooks:
+  preprovision:
+    shell: sh
+    run: |
+      echo "Checking required environment variables..."
+      if [ -z "$AZURE_OPENAI_ENDPOINT" ]; then
+        echo "❌ Error: AZURE_OPENAI_ENDPOINT environment variable is required."
+        echo "Please set it using: azd env set AZURE_OPENAI_ENDPOINT <your-endpoint>"
+        exit 1
+      fi
+      if [ -z "$AZURE_OPENAI_API_KEY" ]; then
+        echo "❌ Error: AZURE_OPENAI_API_KEY environment variable is required."
+        echo "Please set it using: azd env set AZURE_OPENAI_API_KEY <your-api-key>"
+        exit 1
+      fi
+      if [ -z "$AZURE_AI_AGENT_CONNECTION_STRING" ]; then
+        echo "❌ Error: AZURE_AI_AGENT_CONNECTION_STRING environment variable is required."
+        echo "Please set it using: azd env set AZURE_AI_AGENT_CONNECTION_STRING <your-connection-string>"
+        exit 1
+      fi
+      if [ -z "$GITHUB_PERSONAL_ACCESS_TOKEN" ]; then
+        echo "❌ Error: GITHUB_PERSONAL_ACCESS_TOKEN environment variable is required."
+        echo "Please set it using: azd env set GITHUB_PERSONAL_ACCESS_TOKEN <your-token>"
+        exit 1
+      fi
+      echo "✅ All required environment variables are set."
+  
   postprovision:
     shell: sh
     run: |

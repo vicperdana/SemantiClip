@@ -35,6 +35,22 @@ param fileUploadMaxRequestBodySizeInBytes string = '30000000'
 @description('File Upload Allowed Extensions')
 param fileUploadAllowedExtensions string = '.mp4,.avi,.mov,.wmv,.mkv'
 
+// Required connection parameters
+@description('Azure OpenAI Endpoint')
+param azureOpenAiEndpoint string
+
+@description('Azure OpenAI API Key')
+@secure()
+param azureOpenAiApiKey string
+
+@description('Azure AI Agent Connection String')
+@secure()
+param azureAiAgentConnectionString string
+
+@description('GitHub Personal Access Token')
+@secure()
+param gitHubPersonalAccessToken string
+
 // Load abbreviations for consistent resource naming
 var abbrs = loadJsonContent('./abbreviations.json')
 
@@ -90,8 +106,13 @@ module api './core/host/appservice.bicep' = {
     appSettings: {
       AzureAIAgent__MaxEvaluations: azureAiAgentMaxEvaluations
       AzureAIAgent__ChatModelId: azureAiAgentChatModelId
+      AzureAIAgent__ConnectionString: azureAiAgentConnectionString
       AzureOpenAI__ContentDeploymentName: azureOpenAiContentDeploymentName
       AzureOpenAI__WhisperDeploymentName: azureOpenAiWhisperDeploymentName
+      AzureOpenAI__Endpoint: azureOpenAiEndpoint
+      AzureOpenAI__ApiKey: azureOpenAiApiKey
+      AzureOpenAI__UseKeyVault: 'false'
+      GitHub__PersonalAccessToken: gitHubPersonalAccessToken
       FileUpload__MaxRequestBodySizeInBytes: fileUploadMaxRequestBodySizeInBytes
       FileUpload__AllowedExtensions: fileUploadAllowedExtensions
       APPLICATIONINSIGHTS_CONNECTION_STRING: monitoring.outputs.applicationInsightsConnectionString

@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.1.42791",
-      "templateHash": "12706311702880807588"
+      "templateHash": "12799525961120222763"
     }
   },
   "parameters": {
@@ -78,6 +78,30 @@
       "defaultValue": ".mp4,.avi,.mov,.wmv,.mkv",
       "metadata": {
         "description": "File Upload Allowed Extensions"
+      }
+    },
+    "azureOpenAiEndpoint": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure OpenAI Endpoint"
+      }
+    },
+    "azureOpenAiApiKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Azure OpenAI API Key"
+      }
+    },
+    "azureAiAgentConnectionString": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Azure AI Agent Connection String"
+      }
+    },
+    "gitHubPersonalAccessToken": {
+      "type": "securestring",
+      "metadata": {
+        "description": "GitHub Personal Access Token"
       }
     }
   },
@@ -468,8 +492,13 @@
             "value": {
               "AzureAIAgent__MaxEvaluations": "[parameters('azureAiAgentMaxEvaluations')]",
               "AzureAIAgent__ChatModelId": "[parameters('azureAiAgentChatModelId')]",
+              "AzureAIAgent__ConnectionString": "[parameters('azureAiAgentConnectionString')]",
               "AzureOpenAI__ContentDeploymentName": "[parameters('azureOpenAiContentDeploymentName')]",
               "AzureOpenAI__WhisperDeploymentName": "[parameters('azureOpenAiWhisperDeploymentName')]",
+              "AzureOpenAI__Endpoint": "[parameters('azureOpenAiEndpoint')]",
+              "AzureOpenAI__ApiKey": "[parameters('azureOpenAiApiKey')]",
+              "AzureOpenAI__UseKeyVault": "false",
+              "GitHub__PersonalAccessToken": "[parameters('gitHubPersonalAccessToken')]",
               "FileUpload__MaxRequestBodySizeInBytes": "[parameters('fileUploadMaxRequestBodySizeInBytes')]",
               "FileUpload__AllowedExtensions": "[parameters('fileUploadAllowedExtensions')]",
               "APPLICATIONINSIGHTS_CONNECTION_STRING": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName'))), 'Microsoft.Resources/deployments', 'monitoring'), '2022-09-01').outputs.applicationInsightsConnectionString.value]",

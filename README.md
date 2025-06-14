@@ -179,12 +179,36 @@ SemantiClip can be easily deployed to Azure App Service using the Azure Develope
    azd auth login
    ```
 
-3. **Initialize the environment** (first time only)
+3. **Set required environment variables**
+   
+   Before deploying, you must configure the following required environment variables:
+   
+   ```bash
+   # Azure OpenAI Configuration
+   azd env set AZURE_OPENAI_ENDPOINT "https://your-openai-service.openai.azure.com/"
+   azd env set AZURE_OPENAI_API_KEY "your-azure-openai-api-key"
+   
+   # Azure AI Agent Configuration
+   azd env set AZURE_AI_AGENT_CONNECTION_STRING "your-azure-ai-agent-connection-string"
+   
+   # GitHub Integration (for blog post publishing)
+   azd env set GITHUB_PERSONAL_ACCESS_TOKEN "your-github-personal-access-token"
+   ```
+   
+   > **Important**: These variables are required for the application to function properly. The deployment will fail if any of these are missing.
+
+   **How to get these values:**
+   - **AZURE_OPENAI_ENDPOINT**: Found in your Azure OpenAI resource overview page (e.g., `https://your-service.openai.azure.com/`)
+   - **AZURE_OPENAI_API_KEY**: Found in your Azure OpenAI resource's "Keys and Endpoint" section
+   - **AZURE_AI_AGENT_CONNECTION_STRING**: From your Azure AI Foundry project's connection settings
+   - **GITHUB_PERSONAL_ACCESS_TOKEN**: Generate from GitHub Settings > Developer settings > Personal access tokens
+
+4. **Initialize the environment** (first time only)
    ```bash
    azd init
    ```
 
-4. **Deploy to Azure**
+5. **Deploy to Azure**
    ```bash
    azd up
    ```
@@ -212,20 +236,24 @@ azd up
 
 ### Required Azure Services Configuration
 
-After deployment, you'll need to configure the following Azure services manually:
+Before deployment, ensure you have the following Azure services set up:
 
 1. **Azure OpenAI Service**
-   - Create an Azure OpenAI resource
-   - Deploy required models (gpt-4o for content generation, whisper for transcription)
-   - Update the app settings with your endpoints and keys
+   - Create an Azure OpenAI resource in your Azure subscription
+   - Deploy the required models:
+     - `gpt-4o` for content generation
+     - `whisper` for audio transcription
+   - Note your service endpoint and API key for the environment variables
 
 2. **Azure AI Agent (Optional)**
-   - Set up Azure AI Foundry project
-   - Configure the connection string in app settings
+   - Set up an Azure AI Foundry project
+   - Get the connection string from your project settings
 
-3. **GitHub Integration (Optional)**
-   - Generate a GitHub Personal Access Token
-   - Configure it in the app settings for blog publishing
+3. **GitHub Personal Access Token (Optional)**
+   - Generate a GitHub Personal Access Token with repository permissions
+   - Required only if you want to publish blog posts directly to GitHub
+
+The deployment process will automatically configure these settings in your App Service using the environment variables you provided.
 
 ### Monitoring and Logs
 
