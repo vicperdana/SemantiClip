@@ -67,9 +67,25 @@ public class EvaluateBlogPostStep : KernelProcessStep<VideoProcessingResponse>
         _logger.LogInformation("Starting blog post evaluation process");
         BlogPostProcessingResponse _blogstate = blogstate;
         
+        // Check if Azure AI Agent is configured
+        if (string.IsNullOrEmpty(AzureAIAgentConfig.ConnectionString))
+        {
+            _logger.LogWarning("Azure AI Agent not configured, skipping blog post evaluation");
+            // Return the blog post as-is without evaluation
+            this._state = new VideoProcessingResponse
+            {
+                BlogPost = _blogstate.BlogPosts[_blogstate.UpdateIndex],
+                Transcript = _blogstate.VideoProcessingResponse.Transcript
+            };
+            
+            string EvaluateBlogPostComplete = nameof(EvaluateBlogPostComplete);
+            await context.EmitEventAsync(new() { Id = EvaluateBlogPostComplete, Data = this._state, Visibility = KernelProcessEventVisibility.Public});
+            return;
+        }
+        
         // Create the Azure AI agent client
         AIProjectClient client =
-            AzureAIAgent.CreateAzureAIClient(AzureAIAgentConfig.ConnectionString, new AzureCliCredential());
+            AzureAIAgent.CreateAzureAIClient(AzureAIAgentConfig.ConnectionString, new DefaultAzureCredential());
         AgentsClient agentsClient = client.GetAgentsClient();
         var agent = await UseTemplateForAzureAIAgentAsync(
             agentsClient: agentsClient,

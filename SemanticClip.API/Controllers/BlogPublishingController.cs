@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 using SemanticClip.Core.Interfaces;
 using SemanticClip.Core.Models;
@@ -7,6 +8,7 @@ namespace SemanticClip.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    // [Authorize] // Temporarily disabled for simple auth
     public class BlogPublishingController : ControllerBase
     {
         private readonly ILogger<BlogPublishingController> _logger;

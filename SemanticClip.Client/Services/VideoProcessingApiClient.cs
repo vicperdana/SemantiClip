@@ -4,8 +4,6 @@ using SemanticClip.Core.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.Logging;
-using System.Net.WebSockets;
-using System.Text;
 using System.Text.Json;
 
 namespace SemanticClip.Client.Services;
@@ -68,7 +66,6 @@ public class VideoProcessingApiClient
 
     public async Task ProcessVideoAsync(IBrowserFile? videoFile, Func<VideoProcessingProgress, Task>? progressCallback = null)
     {
-        ClientWebSocket? webSocket = null;
         try
         {
             var request = new VideoProcessingRequest();
@@ -82,109 +79,112 @@ public class VideoProcessingApiClient
                 request.FileContent = Convert.ToBase64String(memoryStream.ToArray());
             }
 
-            var baseAddress = _httpClient.BaseAddress ?? new Uri("http://localhost:5290");
-            var wsUri = new UriBuilder(baseAddress)
-            {
-                Scheme = baseAddress.Scheme == "https" ? "wss" : "ws",
-                Path = "api/VideoProcessing/process"
-            }.Uri;
+            _logger.LogInformation("Starting video processing for file: {FileName}", request.FileName);
 
-            webSocket = new ClientWebSocket();
-            
-            // Add a connection timeout
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            
-            try
+            // Start the video processing job
+            var response = await _httpClient.PostAsJsonAsync("api/VideoProcessing/process", request);
+            response.EnsureSuccessStatusCode();
+
+            var jobResponse = await response.Content.ReadFromJsonAsync<JobStartResponse>();
+            if (jobResponse?.JobId == null)
             {
-                await webSocket.ConnectAsync(wsUri, cts.Token);
-            }
-            catch (OperationCanceledException)
-            {
-                throw new TimeoutException("WebSocket connection timed out");
+                throw new InvalidOperationException("Failed to start video processing job - no job ID returned");
             }
 
-            if (webSocket.State != WebSocketState.Open)
-            {
-                throw new InvalidOperationException($"WebSocket connection failed. State: {webSocket.State}");
-            }
+            _logger.LogInformation("Video processing job started with ID: {JobId}", jobResponse.JobId);
 
-            var requestJson = JsonSerializer.Serialize(request);
-            var requestBytes = Encoding.UTF8.GetBytes(requestJson);
-            
-            // Send the request in chunks if it's too large
-            const int chunkSize = 8192; // 8KB chunks
-            for (int offset = 0; offset < requestBytes.Length; offset += chunkSize)
-            {
-                var remainingBytes = requestBytes.Length - offset;
-                var currentChunkSize = Math.Min(chunkSize, remainingBytes);
-                var isLastChunk = offset + currentChunkSize >= requestBytes.Length;
-                
-                await webSocket.SendAsync(
-                    new ArraySegment<byte>(requestBytes, offset, currentChunkSize),
-                    WebSocketMessageType.Text,
-                    isLastChunk,
-                    CancellationToken.None);
-            }
-
-            // Use a larger buffer for receiving messages
-            var buffer = new byte[32768]; // 32KB buffer
-            var messageBuilder = new StringBuilder();
-            
-            while (webSocket.State == WebSocketState.Open)
-            {
-                var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                
-                if (result.MessageType == WebSocketMessageType.Close)
-                {
-                    await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
-                    break;
-                }
-                
-                if (result.MessageType == WebSocketMessageType.Text)
-                {
-                    messageBuilder.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
-                    
-                    if (result.EndOfMessage)
-                    {
-                        var message = messageBuilder.ToString();
-                        messageBuilder.Clear();
-                        
-                        try
-                        {
-                            var progressUpdate = JsonSerializer.Deserialize<VideoProcessingProgress>(message);
-                            if (progressUpdate != null && progressCallback != null)
-                            {
-                                await progressCallback(progressUpdate);
-                            }
-                        }
-                        catch (JsonException ex)
-                        {
-                            _logger.LogError(ex, "Failed to deserialize progress update: {Message}", message);
-                            throw;
-                        }
-                    }
-                }
-            }
+            // Poll for progress updates
+            await PollForProgressAsync(jobResponse.JobId, progressCallback);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing video");
+            
+            if (progressCallback != null)
+            {
+                await progressCallback(new VideoProcessingProgress
+                {
+                    Status = "Failed",
+                    Percentage = 0,
+                    CurrentOperation = "Failed to process video",
+                    Error = ex.Message
+                });
+            }
+            
             throw;
         }
-        finally
+    }
+
+    private async Task PollForProgressAsync(string jobId, Func<VideoProcessingProgress, Task>? progressCallback)
+    {
+        const int pollIntervalMs = 2000; // Poll every 2 seconds
+        const int maxPollAttempts = 300; // 10 minutes max (300 * 2 seconds)
+        
+        var attempts = 0;
+        
+        while (attempts < maxPollAttempts)
         {
-            if (webSocket?.State == WebSocketState.Open)
+            try
             {
-                try
+                var response = await _httpClient.GetAsync($"api/VideoProcessing/status/{jobId}");
+                response.EnsureSuccessStatusCode();
+
+                var jobStatus = await response.Content.ReadFromJsonAsync<JobStatusResponse>();
+                if (jobStatus?.Progress == null)
                 {
-                    await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
+                    _logger.LogWarning("Received null progress for job {JobId}", jobId);
+                    await Task.Delay(pollIntervalMs);
+                    attempts++;
+                    continue;
                 }
-                catch (Exception ex)
+
+                _logger.LogDebug("Job {JobId} status: {Status} - {Operation} ({Percentage}%)", 
+                    jobId, jobStatus.Status, jobStatus.Progress.CurrentOperation, jobStatus.Progress.Percentage);
+
+                // Notify the UI about progress
+                if (progressCallback != null)
                 {
-                    _logger.LogWarning(ex, "Error closing WebSocket connection");
+                    await progressCallback(jobStatus.Progress);
                 }
+
+                // Check if job is completed
+                if (jobStatus.Status.Equals("Completed", StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogInformation("Video processing job {JobId} completed successfully", jobId);
+                    return;
+                }
+                
+                if (jobStatus.Status.Equals("Failed", StringComparison.OrdinalIgnoreCase) || 
+                    jobStatus.Status.Equals("Cancelled", StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogError("Video processing job {JobId} failed with status: {Status}", jobId, jobStatus.Status);
+                    return;
+                }
+
+                await Task.Delay(pollIntervalMs);
+                attempts++;
             }
-            webSocket?.Dispose();
+            catch (HttpRequestException ex)
+            {
+                _logger.LogWarning(ex, "Failed to poll job status for {JobId}, attempt {Attempt}/{MaxAttempts}", 
+                    jobId, attempts + 1, maxPollAttempts);
+                
+                await Task.Delay(pollIntervalMs);
+                attempts++;
+            }
+        }
+
+        _logger.LogError("Polling for job {JobId} timed out after {Attempts} attempts", jobId, attempts);
+        
+        if (progressCallback != null)
+        {
+            await progressCallback(new VideoProcessingProgress
+            {
+                Status = "Failed",
+                Percentage = 0,
+                CurrentOperation = "Polling timeout - job status unknown",
+                Error = "Failed to get final job status within the expected time"
+            });
         }
     }
 

@@ -1,18 +1,43 @@
 @using Microsoft.AspNetCore.Components.Authorization
-@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using SemanticClip.Client.Services
+@inject CustomAuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
 
 <AuthorizeView>
     <Authorized>
-        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Person" Color="Color.Inherit">
-            Hello, @context.User.Identity?.Name!
-        </MudButton>
-        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ExitToApp" Color="Color.Inherit" Href="authentication/logout">
-            Log out
-        </MudButton>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Inherit" />
+            <MudText Typo="Typo.body2" Color="Color.Inherit">
+                Hello, @context.User.Identity?.Name!
+            </MudText>
+            <MudButton Variant="Variant.Text" 
+                       Color="Color.Inherit" 
+                       StartIcon="@Icons.Material.Filled.Logout"
+                       OnClick="HandleLogout"
+                       Size="Size.Small">
+                Logout
+            </MudButton>
+        </div>
     </Authorized>
     <NotAuthorized>
-        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Login" Color="Color.Primary" Href="authentication/login">
-            Log in
+        <MudButton Variant="Variant.Text" 
+                   Color="Color.Inherit" 
+                   StartIcon="@Icons.Material.Filled.Login"
+                   OnClick="HandleLogin">
+            Login
         </MudButton>
     </NotAuthorized>
 </AuthorizeView>
+
+@code {
+    private void HandleLogin()
+    {
+        Navigation.NavigateTo("/login");
+    }
+
+    private async Task HandleLogout()
+    {
+        await AuthStateProvider.LogoutAsync();
+        Navigation.NavigateTo("/");
+    }
+}

@@ -1,9 +1,62 @@
 name: GenerateBlogPost
 template: |
-  Generate a blog post from the following video transcript formatted in markdown, make sure the markdown is valid and well-structured:
+  Generate a blog post from the following video transcript formatted in markdown. 
+  Make sure the markdown is valid, well-structured, and aligns with the tone and style of Microsoft Tech Community "Marketplace Blog" posts. Use the following guidelines:
+
+  ## Tone & Style
+  - Use a professional, solution-oriented tone targeting software development companies, ISVs, and security decision makers.
+  - Maintain a clear, confident, and actionable writing style.
+  - Use second-person voice ("you") where appropriate to address the reader directly.
+  - Showcase Microsoft’s security and AI governance capabilities with credibility.
+
+  ## Blog Structure
+  1. **Title**:  
+     - Clear and concise, optionally include terms like “AI Security,” “Trust,” “Purview,” or “GenAI-nxiety.”
+  
+  2. **Introduction**:  
+     - Begin by highlighting the current AI landscape—rapid innovation coupled with rising risk and trust concerns.
+     - Mention the session/webinar title and context (e.g., part of the "Security for Software Development Companies" series).
+  
+  3. **Industry Challenge Section**:
+     - Reference real stats (e.g., % of CISOs worried about data leakage).
+     - Optionally insert the infographic image and add a markdown caption like:  
+       `![Alt text](image_url)`  
+       `*Figure X. Description of the image.*`
+     - Frame the risks in terms of business impact: compliance, trust, and adoption barriers.
+  
+  4. **Microsoft Solution**:
+     - Introduce Microsoft Purview as the solution.
+     - Emphasize data loss prevention, auditability, governance across tools like Copilot, GPT, and Azure OpenAI.
+     - Use a screenshot if available and caption it with insight.
+  
+  5. **Developer Integration**:
+     - Describe the Microsoft Graph APIs (`protectionScopes.compute`, `processContent`, etc.).
+     - Keep the explanation light but informative. Use bullet points or code blocks for clarity.
+     - Emphasize ease of use for ISVs and developers.
+  
+  6. **Real-World Example**:
+     - Show a scenario (e.g., blocking a prompt with credit card numbers).
+     - Optionally include a screenshot of Microsoft Copilot being blocked by Purview policy.
+  
+  7. **Enterprise Value**:
+     - Explain what the IT admin sees in Microsoft Purview (e.g., AI Hub dashboard).
+     - Use a screenshot and explain the visibility it provides.
+  
+  8. **Getting Started Resources**:
+     - Include a bulleted list of helpful links (e.g., aka.ms SDKs, documentation, sample code).
+  
+  9. **Conclusion**:
+     - Reinforce the importance of security as a competitive advantage.
+     - Invite readers to watch the full session and explore the full webinar series.
+     - End with a forward-looking, optimistic tone.
+
+  ## Image Handling
+  - Embed each image at the relevant section using markdown syntax.
+  - Add a caption beneath each image that begins with “*Figure X.*” and briefly explains its relevance.
+
   {{$transcript}}
 template_format: semantic-kernel
-description: A function that generates a blog post from a video transcript.
+description: A function that generates a blog post from a video transcript, formatted in Microsoft Tech Community style.
 input_variables:
   - name: transcript
     description: The video transcript to generate a blog post from.

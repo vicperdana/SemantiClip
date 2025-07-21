@@ -3,6 +3,8 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.AudioToText;
 using Microsoft.SemanticKernel.Process;
 using System.Text;
+using Xabe.FFmpeg;
+using SemanticClip.Services.Utils;
 
 namespace SemanticClip.Services.Steps;
 
@@ -19,6 +21,9 @@ public class TranscribeVideoStep : KernelProcessStep
     [KernelFunction(Functions.TranscribeVideo)]
     public async Task<string> TranscribeVideoAsync(string videoPath, Kernel kernel, KernelProcessStepContext context)
     {
+        // Ensure FFMpeg is configured and binaries are available
+        await FFMpegConfiguration.EnsureFFMpegAsync(_logger);
+        
         _logger.LogInformation("Extracting audio from video: {VideoPath}", videoPath);
         string outputAudioPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.wav");
         
@@ -42,62 +47,41 @@ public class TranscribeVideoStep : KernelProcessStep
 
     private async Task ExtractAudioFromVideoAsync(string videoPath, string outputAudioPath)
     {
-        _logger.LogInformation("Extracting audio from video: {VideoPath}", videoPath);
+        _logger.LogInformation("Extracting audio from video using Xabe.FFmpeg with 2x speed: {VideoPath}", videoPath);
         
-        using var process = new System.Diagnostics.Process
+        try
         {
-            StartInfo = new System.Diagnostics.ProcessStartInfo
+            // Use Xabe.FFmpeg to extract audio from video
+            var mediaInfo = await FFmpeg.GetMediaInfo(videoPath);
+            var audioStream = mediaInfo.AudioStreams.FirstOrDefault();
+            
+            if (audioStream == null)
             {
-                FileName = "ffmpeg",
-                Arguments = $"-i \"{videoPath}\" -vn -acodec pcm_s16le -ar 16000 -ac 1 \"{outputAudioPath}\" -y",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
+                throw new InvalidOperationException("No audio stream found in the video file");
             }
-        };
-        
-        var outputBuilder = new StringBuilder();
-        var errorBuilder = new StringBuilder();
-        
-        process.OutputDataReceived += (sender, args) => {
-            if (args.Data != null) outputBuilder.AppendLine(args.Data);
-        };
-        
-        process.ErrorDataReceived += (sender, args) => {
-            if (args.Data != null) errorBuilder.AppendLine(args.Data);
-        };
-        
-        _logger.LogInformation("Running FFmpeg command");
-        process.Start();
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-        
-        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(10));
-        
-        try 
-        {
-            await process.WaitForExitAsync(cts.Token);
+
+            // Configure audio stream settings with 2x speed
+            audioStream.SetSampleRate(16000);
+
+            var conversion = FFmpeg.Conversions.New()
+                .AddStream(audioStream)
+                .AddParameter("-filter:a atempo=2.0") // Speed up audio by 2x
+                .SetOutput(outputAudioPath);
+
+            await conversion.Start();
+
+            if (!File.Exists(outputAudioPath))
+            {
+                throw new FileNotFoundException("Audio extraction did not produce the expected output file");
+            }
+            
+            _logger.LogInformation("Successfully extracted audio to: {AudioPath}", outputAudioPath);
         }
-        catch (OperationCanceledException)
+        catch (Exception ex)
         {
-            process.Kill(true);
-            throw new Exception("Audio extraction timed out after 10 minutes");
+            _logger.LogError(ex, "FFMpegCore audio extraction failed");
+            throw new Exception($"Failed to extract audio: {ex.Message}", ex);
         }
-        
-        if (process.ExitCode != 0)
-        {
-            string errorOutput = errorBuilder.ToString();
-            _logger.LogError("FFmpeg error: {Error}", errorOutput);
-            throw new Exception($"Failed to extract audio: {errorOutput}");
-        }
-        
-        if (!File.Exists(outputAudioPath))
-        {
-            throw new FileNotFoundException("Audio extraction did not produce the expected output file");
-        }
-        
-        _logger.LogInformation("Successfully extracted audio to: {AudioPath}", outputAudioPath);
     }
 
     private async Task<string> TranscribeAudioFileAsync(string audioPath, Kernel kernel)
@@ -132,4 +116,4 @@ public class TranscribeVideoStep : KernelProcessStep
             }
         }
     }
-} 
+}

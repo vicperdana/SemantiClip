@@ -102,23 +102,23 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
         }
     }
 
-    private async Task<string?> GetStoredUserAsync()
+    private Task<string?> GetStoredUserAsync()
     {
         // In a real app, you'd use localStorage or sessionStorage
         // For simplicity, we'll use a static field (will reset on page refresh)
-        return _storedUser;
+        return Task.FromResult(_storedUser);
     }
 
-    private async Task StoreUserAsync(string userJson)
+    private Task StoreUserAsync(string userJson)
     {
         _storedUser = userJson;
-        await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
-    private async Task RemoveUserAsync()
+    private Task RemoveUserAsync()
     {
         _storedUser = null;
-        await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     private static string? _storedUser;

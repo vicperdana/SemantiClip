@@ -1,16 +1,18 @@
-<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
     <NoWarn>SKEXP0070;SKEXP0010;SKEXP0080;SKEXP0001;SKEXP0110</NoWarn>
+    <UserSecretsId>91c060ad-2964-4b7c-849e-24953f596b68</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.4" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.4" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.11" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="8.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.11" PrivateAssets="all" />
     <PackageReference Include="Microsoft.SemanticKernel.Agents.Abstractions" Version="1.48.0" />
     <PackageReference Include="Microsoft.SemanticKernel.Agents.Core" Version="1.48.0" />
     <PackageReference Include="MudBlazor" Version="8.5.1" />
@@ -18,12 +20,50 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
+    <!-- Service worker excluded to prevent integrity check failures -->
+    <!-- <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" /> -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="web.config">
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+    </None>
+    <None Include="default.html">
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SemanticClip.Core\SemanticClip.Core.csproj" />
     <ProjectReference Include="..\SemanticClip.Services\SemanticClip.Services.csproj" />
   </ItemGroup>
+
+  <!-- Custom target to flatten wwwroot structure for Azure App Service -->
+  <Target Name="CopyWwwrootToRoot" AfterTargets="Publish">
+    <PropertyGroup>
+      <WwwrootPath>$(PublishDir)wwwroot</WwwrootPath>
+    </PropertyGroup>
+    
+    <!-- Move all files from wwwroot to publish root -->
+    <ItemGroup>
+      <WwwrootFiles Include="$(WwwrootPath)\**\*" />
+    </ItemGroup>
+    
+    <!-- Copy files from wwwroot to root, preserving directory structure -->
+    <Copy SourceFiles="@(WwwrootFiles)" DestinationFiles="@(WwwrootFiles->'$(PublishDir)%(RecursiveDir)%(Filename)%(Extension)')" Condition="'%(WwwrootFiles.RecursiveDir)' != ''" />
+    
+    <!-- Copy files from wwwroot root to publish root -->
+    <Copy SourceFiles="@(WwwrootFiles)" DestinationFiles="@(WwwrootFiles->'$(PublishDir)%(Filename)%(Extension)')" Condition="'%(WwwrootFiles.RecursiveDir)' == ''" />
+    
+    <!-- Remove the wwwroot directory after copying -->
+    <RemoveDir Directories="$(WwwrootPath)" />
+    
+    <!-- Remove service worker files to prevent integrity errors -->
+    <Delete Files="$(PublishDir)service-worker.js;$(PublishDir)service-worker.published.js" ContinueOnError="true" />
+    
+    <!-- Copy web.config and default.html to publish root -->
+    <Copy SourceFiles="$(MSBuildProjectDirectory)/web.config" DestinationFiles="$(PublishDir)web.config" Condition="Exists('$(MSBuildProjectDirectory)/web.config')" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)/default.html" DestinationFiles="$(PublishDir)default.html" Condition="Exists('$(MSBuildProjectDirectory)/default.html')" />
+  </Target>
 
 </Project>

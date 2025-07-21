@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.AspNetCore.Components.Authorization;
 using MudBlazor;
 using MudBlazor.Services;
 using SemanticClip.Client;
@@ -11,10 +12,35 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 // Configure HttpClient to point to the API
-var apiBaseAddress = builder.Configuration["ApiBaseAddress"] ?? "http://127.0.0.1:5290";
-builder.Services.AddScoped(sp => new HttpClient { 
-    BaseAddress = new Uri(apiBaseAddress),
-    MaxResponseContentBufferSize = 3000000 // 3MB
+var apiBaseAddress = builder.HostEnvironment.IsDevelopment() 
+    ? "http://127.0.0.1:5290/" 
+    : builder.Configuration["ApiBaseAddress"];
+
+// Ensure trailing slash
+if (!string.IsNullOrEmpty(apiBaseAddress) && !apiBaseAddress.EndsWith("/"))
+{
+    apiBaseAddress += "/";
+}
+
+// Add custom authentication
+builder.Services.AddScoped<CustomAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(provider => provider.GetRequiredService<CustomAuthenticationStateProvider>());
+builder.Services.AddAuthorizationCore();
+
+// Configure HTTP client without access token support for now
+builder.Services.AddScoped(sp =>
+{
+    // var handler = sp.GetRequiredService<BaseAddressAuthorizationMessageHandler>();
+    // handler.ConfigureHandler(
+    //     authorizedUrls: new[] { apiBaseAddress! },
+    //     scopes: new[] { "openid", "profile", "email" });
+    
+    var httpClient = new HttpClient()
+    {
+        BaseAddress = new Uri(apiBaseAddress!),
+        MaxResponseContentBufferSize = 3000000 // 3MB
+    };
+    return httpClient;
 });
 
 // Add file upload configuration to client

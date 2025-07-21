@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: semanticclip
+metadata:
+  template: semanticclip@0.0.1-beta
+
+# Environment configuration
+services:
+  api:
+    project: ./SemanticClip.API
+    language: dotnet
+    host: appservice
+  client:
+    project: ./SemanticClip.Client  
+    language: dotnet
+    host: appservice
+
+hooks:
+  postdeploy:
+    windows:
+      shell: pwsh
+      run: echo "Deployment completed successfully!"
+    posix:
+      shell: sh
+      run: echo "Deployment completed successfully!"

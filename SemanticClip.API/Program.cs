@@ -1,12 +1,41 @@
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using SemanticClip.Core.Interfaces;
 using SemanticClip.Services;
+using SemanticClip.Services.Services;
 using SemanticClip.Services.Plugins;
 using SemanticClip.Services.Steps;
 using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
+using Xabe.FFmpeg;
+using Xabe.FFmpeg.Downloader;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Xabe.FFmpeg to download and use bundled FFmpeg binaries for Windows compatibility
+var ffmpegPath = Path.Combine(builder.Environment.ContentRootPath, "ffmpeg");
+Directory.CreateDirectory(ffmpegPath);
+
+try
+{
+    // Download FFmpeg binaries at startup (will be cached after first download)
+    // This automatically downloads Windows-compatible binaries when running on Windows
+    await FFmpegDownloader.GetLatestVersion(FFmpegVersion.Official, ffmpegPath);
+    
+    // Set the path for Xabe.FFmpeg
+    FFmpeg.SetExecutablesPath(ffmpegPath);
+    
+    // Log successful setup
+    var logger = LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger("FFmpeg");
+    logger.LogInformation("FFmpeg binaries downloaded and configured at: {Path}", ffmpegPath);
+}
+catch (Exception ex)
+{
+    // Log error but don't crash the application
+    var logger = LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger("FFmpeg");
+    logger.LogError(ex, "Failed to download FFmpeg binaries. Video processing features may not work.");
+}
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -37,20 +66,43 @@ builder.Services.Configure<KestrelServerOptions>(options =>
     options.Limits.MaxRequestBodySize = maxRequestBodySize;
 });
 
-// Add CORS
+// Add CORS - Allow both localhost and production domains
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", builder =>
+    options.AddPolicy("AllowSpecificOrigins", policy =>
     {
-        builder.AllowAnyOrigin()
-               .AllowAnyMethod()
-               .AllowAnyHeader();
+        policy.WithOrigins(
+                "https://localhost:7227",
+                "http://localhost:5244", 
+                "https://semanticlipweb.vicperdana.com",
+                "https://semanticlip.vicperdana.com")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
     });
 });
+
+// Using custom authentication
+// Authentication is handled on the client side
+//builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+//    .AddJwtBearer(options =>
+//    {
+//         // Custom authentication implementation
+//    });
+
+// builder.Services.AddAuthorization();
 
 
 // Register services
 builder.Services.AddScoped<IVideoProcessingService, VideoProcessingService>();
+builder.Services.AddSingleton<IJobTrackingService, InMemoryJobTrackingService>();
 builder.Services.AddScoped<IBlogPublishingService, BlogPublishingService>();
 
 // Register BlogPublishingController-related services
@@ -91,11 +143,9 @@ builder.Services.AddTransient<PublishBlogPlugin>(sp =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Enable Swagger in all environments for troubleshooting
+app.UseSwagger();
+app.UseSwaggerUI();
 
 // Configure request size limits middleware
 app.Use(async (context, next) =>
@@ -109,12 +159,14 @@ app.Use(async (context, next) =>
 });
 
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
 
-// Enable WebSockets
-app.UseWebSockets();
+// Use appropriate CORS policy based on environment
+var corsPolicy = app.Environment.IsDevelopment() ? "AllowAll" : "AllowSpecificOrigins";
+app.UseCors(corsPolicy);
 
-app.UseAuthorization();
+// Authentication middleware removed - using custom authentication on client side
+// app.UseAuthentication();
+// app.UseAuthorization();
 app.MapControllers();
 
 app.Run();

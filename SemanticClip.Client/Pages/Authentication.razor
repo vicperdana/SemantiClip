@@ -1,7 +1,17 @@
-@page "/authentication/{action}"
+@* This page was used for Auth0 authentication - now disabled *@
+@page "/authentication-disabled/{action}"
 @using Microsoft.AspNetCore.Components.WebAssembly.Authentication
 
+@* 
 <RemoteAuthenticatorView Action="@Action" />
+*@
+
+<div class="container mt-4">
+    <div class="alert alert-info">
+        <h4>Authentication Method Changed</h4>
+        <p>This application now uses custom authentication. Please <a href="/login">login here</a>.</p>
+    </div>
+</div>
 
 @code{
     [Parameter] public string? Action { get; set; }

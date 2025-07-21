@@ -1,4 +1,6 @@
 @page "/"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
 @using SemanticClip.Core
 @using SemanticClip.Client.Services
 @using System.Net.WebSockets
@@ -25,6 +27,9 @@
             <MudTabPanel Text="Upload Video">
                 <MudPaper Class="pa-4 mt-4">
                     <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+                        <MudText Typo="Typo.body2" Class="mb-2" Color="Color.Info">
+                            Maximum file size: 10MB. Supported formats: MP4, AVI, MOV, WMV, MKV
+                        </MudText>
                         <MudFileUpload T="IBrowserFile" FilesChanged="AssignSelectedFile">
                             <ActivatorContent>
                                 <MudFab Color="Color.Success"
@@ -33,11 +38,18 @@
                         </MudFileUpload>
                         @if (videoFile != null)
                         {
-                            <MudText Class="mt-2">Selected file: @videoFile.Name</MudText>
+                            <MudText Class="mt-2">Selected file: @videoFile.Name (@(FormatFileSize(videoFile.Size)))</MudText>
+                            @if (videoFile.Size > 10485760) // 10MB in bytes
+                            {
+                                <MudAlert Severity="Severity.Error" Class="mt-2">
+                                    File size exceeds the 10MB limit. Please select a smaller file.
+                                </MudAlert>
+                            }
                         }
                     </MudForm>
 
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@ProcessVideo" Disabled="@isProcessing" Class="mt-4">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@ProcessVideo" 
+                               Disabled="@(isProcessing || videoFile == null || videoFile.Size > 10485760)" Class="mt-4">
                         @if (isProcessing)
                         {
                             <MudProgressCircular Color="Color.Default" Size="Size.Small" Indeterminate="true" Class="mr-2" />
@@ -124,6 +136,16 @@
     private void AssignSelectedFile(IBrowserFile? file)
     {
         videoFile = file;
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        if (bytes >= 1048576) // 1MB
+            return $"{bytes / 1048576.0:F1} MB";
+        else if (bytes >= 1024) // 1KB
+            return $"{bytes / 1024.0:F1} KB";
+        else
+            return $"{bytes} bytes";
     }
 
     private async Task ProcessVideo()

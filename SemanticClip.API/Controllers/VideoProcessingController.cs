@@ -1,149 +1,184 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using SemanticClip.Core.Interfaces;
 using SemanticClip.Core.Models;
-using System.Net.WebSockets;
-using System.Text;
-using System.Text.Json;
 
 namespace SemanticClip.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+// [Authorize] // Temporarily disabled for simple auth
 public class VideoProcessingController : ControllerBase
 {
     private readonly IVideoProcessingService _videoProcessingService;
+    private readonly IJobTrackingService _jobTrackingService;
     private readonly ILogger<VideoProcessingController> _logger;
 
     public VideoProcessingController(
         IVideoProcessingService videoProcessingService,
+        IJobTrackingService jobTrackingService,
         ILogger<VideoProcessingController> logger)
     {
         _videoProcessingService = videoProcessingService;
+        _jobTrackingService = jobTrackingService;
         _logger = logger;
     }
 
-    [HttpGet("process")]
-    public async Task ProcessVideoWebSocketAsync()
+    /// <summary>
+    /// Starts video processing and returns a job ID for tracking progress
+    /// </summary>
+    [HttpPost("process")]
+    public IActionResult StartVideoProcessing([FromBody] VideoProcessingRequest request)
     {
-        if (HttpContext.WebSockets.IsWebSocketRequest)
-        {
-            using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-            _logger.LogInformation("WebSocket connection established.");
-            await HandleWebSocketConnectionAsync(webSocket);
-        }
-        else
-        {
-            HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
-            await HttpContext.Response.WriteAsync("Expected a WebSocket request.");
-        }
-    }
-
-    private async Task HandleWebSocketConnectionAsync(WebSocket webSocket)
-    {
-        var buffer = new byte[32768]; // 32KB buffer
-        var messageBuilder = new StringBuilder();
-        var request = new VideoProcessingRequest();
-        var progress = new VideoProcessingProgress();
-
         try
         {
-            while (webSocket.State == WebSocketState.Open)
+            _logger.LogInformation("Received video processing request for file: {FileName}", request?.FileName);
+            
+            if (request == null)
             {
-                var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-
-                if (result.MessageType == WebSocketMessageType.Close)
-                {
-                    await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
-                    break;
-                }
-
-                if (result.MessageType == WebSocketMessageType.Text)
-                {
-                    messageBuilder.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
-
-                    if (result.EndOfMessage)
-                    {
-                        var message = messageBuilder.ToString();
-                        messageBuilder.Clear();
-
-                        try
-                        {
-                            request = JsonSerializer.Deserialize<VideoProcessingRequest>(message)
-                                ?? throw new JsonException("Failed to deserialize request");
-
-                            // Update progress
-                            progress.Status = "Processing video...";
-                            progress.Percentage = 10;
-                            await SendProgressUpdateAsync(webSocket, progress);
-
-                            // Process the video
-                            var response = await _videoProcessingService.ProcessVideoAsync(request);
-
-                            // Update progress
-                            progress.Status = "Completed";
-                            progress.Percentage = 100;
-                            progress.Result = response;
-                            await SendProgressUpdateAsync(webSocket, progress);
-                        }
-                        catch (JsonException ex)
-                        {
-                            _logger.LogError(ex, "Failed to deserialize request: {Message}", message);
-                            progress.Status = "Error";
-                            progress.Error = "Failed to process request";
-                            await SendProgressUpdateAsync(webSocket, progress);
-                            break;
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "Error processing video");
-                            progress.Status = "Error";
-                            progress.Error = ex.Message;
-                            await SendProgressUpdateAsync(webSocket, progress);
-                            break;
-                        }
-                    }
-                }
+                _logger.LogWarning("Received null request");
+                return BadRequest("Request body is required.");
             }
+
+            if (string.IsNullOrEmpty(request.FileContent) || string.IsNullOrEmpty(request.FileName))
+            {
+                _logger.LogWarning("Invalid request - missing file content or filename. FileName: {FileName}, HasFileContent: {HasContent}", 
+                    request.FileName, !string.IsNullOrEmpty(request.FileContent));
+                return BadRequest("File content and filename are required.");
+            }
+
+            _logger.LogInformation("Processing valid request for file: {FileName}, Size: {Size} bytes", 
+                request.FileName, request.FileContent?.Length ?? 0);
+
+            // Create a job for tracking
+            var jobId = _jobTrackingService.CreateJob(request);
+            _logger.LogInformation("Created video processing job {JobId} for file {FileName}", jobId, request.FileName);
+
+            // Start processing in the background
+            _ = Task.Run(async () => await ProcessVideoInBackgroundAsync(jobId, request));
+
+            var response = new JobStartResponse
+            {
+                JobId = jobId,
+                Status = "Started",
+                Message = "Video processing has been started. Use the job ID to check progress."
+            };
+
+            return Ok(response);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during WebSocket communication");
-            if (webSocket.State == WebSocketState.Open)
-            {
-                try
-                {
-                    progress.Status = "Error";
-                    progress.Error = ex.Message;
-                    await SendProgressUpdateAsync(webSocket, progress);
-                    await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, "Error occurred", CancellationToken.None);
-                }
-                catch (Exception closeEx)
-                {
-                    _logger.LogError(closeEx, "Error closing WebSocket connection");
-                }
-            }
-        }
-        finally
-        {
-            if (webSocket.State == WebSocketState.Open)
-            {
-                try
-                {
-                    await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Error closing WebSocket connection");
-                }
-            }
-            webSocket.Dispose();
+            _logger.LogError(ex, "Error starting video processing");
+            return StatusCode(500, new { Error = "Failed to start video processing", Details = ex.Message });
         }
     }
 
-    private async Task SendProgressUpdateAsync(WebSocket webSocket, VideoProcessingProgress progress)
+    /// <summary>
+    /// Gets the current status and progress of a video processing job
+    /// </summary>
+    [HttpGet("status/{jobId}")]
+    public IActionResult GetJobStatus(string jobId)
     {
-        var message = JsonSerializer.Serialize(progress);
-        var bytes = Encoding.UTF8.GetBytes(message);
-        await webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
+        try
+        {
+            var job = _jobTrackingService.GetJob(jobId);
+            if (job == null)
+            {
+                return NotFound(new { Error = "Job not found", JobId = jobId });
+            }
+
+            return Ok(new
+            {
+                JobId = jobId,
+                Status = job.Status.ToString(),
+                Progress = job.Progress,
+                Result = job.Result,
+                CreatedAt = job.CreatedAt,
+                LastUpdated = job.LastUpdated
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting job status for {JobId}", jobId);
+            return StatusCode(500, new { Error = "Failed to get job status", Details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Cancels a video processing job
+    /// </summary>
+    [HttpPost("cancel/{jobId}")]
+    public IActionResult CancelJob(string jobId)
+    {
+        try
+        {
+            var job = _jobTrackingService.GetJob(jobId);
+            if (job == null)
+            {
+                return NotFound(new { Error = "Job not found", JobId = jobId });
+            }
+
+            if (job.Status == JobStatus.Completed || job.Status == JobStatus.Failed)
+            {
+                return BadRequest(new { Error = "Cannot cancel a job that is already completed or failed", JobId = jobId });
+            }
+
+            _jobTrackingService.CancelJob(jobId);
+            _logger.LogInformation("Cancelled video processing job {JobId}", jobId);
+
+            return Ok(new { JobId = jobId, Status = "Cancelled", Message = "Job has been cancelled successfully." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error cancelling job {JobId}", jobId);
+            return StatusCode(500, new { Error = "Failed to cancel job", Details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Background method to process video and update job progress
+    /// </summary>
+    private async Task ProcessVideoInBackgroundAsync(string jobId, VideoProcessingRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Starting background processing for job {JobId}", jobId);
+
+            // Get the job for cancellation token
+            var job = _jobTrackingService.GetJob(jobId);
+            if (job == null)
+            {
+                _logger.LogError("Job {JobId} not found when starting background processing", jobId);
+                return;
+            }
+
+            // Setup progress callback
+            Action<VideoProcessingProgress> progressCallback = (progress) =>
+            {
+                _jobTrackingService.UpdateJobProgress(jobId, progress);
+            };
+
+            // Process the video with progress updates
+            var result = await _videoProcessingService.ProcessVideoAsync(request, progressCallback);
+
+            // Mark job as completed
+            _jobTrackingService.CompleteJob(jobId, result);
+            _logger.LogInformation("Completed video processing job {JobId}", jobId);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Video processing job {JobId} was cancelled", jobId);
+            _jobTrackingService.UpdateJobProgress(jobId, new VideoProcessingProgress
+            {
+                Status = "Cancelled",
+                CurrentOperation = "Processing was cancelled by user",
+                Percentage = 0
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing video for job {JobId}", jobId);
+            _jobTrackingService.FailJob(jobId, ex.Message);
+        }
     }
 }

@@ -15,6 +15,7 @@
 - [SemantiClip](#semanticlip)
   - [Table of Contents](#table-of-contents)
   - [About The Project](#about-the-project)
+    - [Key Features](#key-features)
   - [Built With](#built-with)
   - [Getting Started](#getting-started)
     - [Prerequisites](#prerequisites)
@@ -126,10 +127,6 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
      "AzureOpenAI": {
        "Endpoint": "your-azure-openai-endpoint",
        "ApiKey": "your-azure-openai-api-key",
-     },
-     "LocalSLM": {
-       "ModelId": "phi4-mini",
-       "Endpoint": "http://localhost:11434"
      },
      "AzureAIAgent": {
        "ConnectionString": "your-azure-ai-agent-connection-string",

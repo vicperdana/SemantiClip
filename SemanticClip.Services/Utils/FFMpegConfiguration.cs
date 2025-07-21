@@ -1,5 +1,4 @@
-using FFMpegCore;
-using FFMpegCore.Helpers;
+using Xabe.FFmpeg;
 using Microsoft.Extensions.Logging;
 
 namespace SemanticClip.Services.Utils;
@@ -11,6 +10,9 @@ public static class FFMpegConfiguration
 
     public static void ConfigureFFMpeg(ILogger? logger = null)
     {
+        if (_isConfigured)
+            return;
+
         lock (_lock)
         {
             if (_isConfigured)
@@ -18,33 +20,61 @@ public static class FFMpegConfiguration
 
             try
             {
-                // Try to use embedded binaries first
-                // FFMpegCore will automatically try to find FFmpeg in:
-                // 1. Environment PATH
-                // 2. Current directory
-                // 3. Common installation directories
+                logger?.LogInformation("Configuring Xabe.FFmpeg");
                 
-                logger?.LogInformation("Configuring FFMpegCore");
+                // Try to find FFmpeg in common locations
+                var currentDirectory = AppContext.BaseDirectory;
                 
-                // Set a reasonable timeout for operations
-                GlobalFFOptions.Configure(new FFOptions
+                // Check for common locations where FFmpeg binaries might be placed
+                var possiblePaths = new[]
                 {
-                    BinaryFolder = "", // Let FFMpegCore auto-discover
-                    TemporaryFilesFolder = Path.GetTempPath(),
-                    WorkingDirectory = Path.GetTempPath()
-                });
+                    Path.Combine(currentDirectory, "ffmpeg"),
+                    Path.Combine(currentDirectory, "bin", "ffmpeg"),
+                    "/usr/bin/ffmpeg", // Common on Linux
+                    "/usr/local/bin/ffmpeg" // Alternative on Linux
+                };
 
-                // Verify FFmpeg is available
-                var version = FFMpeg.GetVersion();
-                logger?.LogInformation("FFmpeg configured successfully. Version: {Version}", version);
+                foreach (var path in possiblePaths)
+                {
+                    if (File.Exists(path))
+                    {
+                        var directory = Path.GetDirectoryName(path);
+                        if (!string.IsNullOrEmpty(directory))
+                        {
+                            FFmpeg.SetExecutablesPath(directory);
+                            logger?.LogInformation("FFmpeg configured to use binaries at: {Path}", directory);
+                            _isConfigured = true;
+                            return;
+                        }
+                    }
+                }
                 
+                // If no FFmpeg found, log warning but continue (system might have it in PATH)
+                logger?.LogWarning("FFmpeg binaries not found in expected locations. Relying on system installation.");
                 _isConfigured = true;
             }
             catch (Exception ex)
             {
-                logger?.LogError(ex, "Failed to configure FFmpeg. Video processing may not work.");
-                // Don't throw here - let the individual operations handle the failure
+                logger?.LogError(ex, "Failed to configure Xabe.FFmpeg. Video processing may not work.");
+                throw new InvalidOperationException("Xabe.FFmpeg could not be configured.", ex);
             }
+        }
+    }
+
+    public static Task EnsureFFMpegAsync(ILogger? logger = null)
+    {
+        ConfigureFFMpeg(logger);
+        
+        try
+        {
+            logger?.LogInformation("Xabe.FFmpeg configuration completed");
+            // No need to download anything if already configured in Program.cs
+            return Task.CompletedTask;
+        }
+        catch (Exception ex)
+        {
+            logger?.LogError(ex, "Failed to ensure FFmpeg availability");
+            throw;
         }
     }
 }

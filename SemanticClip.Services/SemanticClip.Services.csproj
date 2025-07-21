@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <NoWarn>SKEXP0070;SKEXP0010;SKEXP0080;SKEXP0001;SKEXP0110</NoWarn>
@@ -16,13 +16,14 @@
     <PackageReference Include="Microsoft.SemanticKernel.Agents.Abstractions" Version="1.48.0" />
     <PackageReference Include="Microsoft.SemanticKernel.Agents.AzureAI" Version="1.48.0-preview" />
     <PackageReference Include="Microsoft.SemanticKernel.Agents.Core" Version="1.48.0" />
-    <PackageReference Include="Microsoft.SemanticKernel.Connectors.Ollama" Version="1.48.0-alpha" />
     <PackageReference Include="Microsoft.SemanticKernel.Core" Version="1.48.0" />
     <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.48.0" />
     <PackageReference Include="Microsoft.SemanticKernel.Process.Abstractions" Version="1.48.0-alpha" />
     <PackageReference Include="Microsoft.SemanticKernel.Process.Core" Version="1.48.0-alpha" />
     <PackageReference Include="Microsoft.SemanticKernel.Process.LocalRuntime" Version="1.48.0-alpha" />
     <PackageReference Include="Microsoft.SemanticKernel.Yaml" Version="1.48.0" />
+    <PackageReference Include="Xabe.FFmpeg" Version="5.2.6" />
+    <PackageReference Include="Xabe.FFmpeg.Downloader" Version="5.2.6" />
   </ItemGroup>
 
   <ItemGroup>
