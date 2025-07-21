@@ -1,0 +1,96 @@
+<step title="BackgroundTrace" date="2025-07-17T06:36:25.575" instance="d13c54" url="/api/zipdeploy" method="POST" >
+  <step title="Updating shutdown sentinel last write time" date="2025-07-17T06:36:25.653" SemaphoreCount="7" /><!-- duration: 16ms -->
+  <step title="LockFile &apos;C:\home\site\locks\deployments.lock&apos; acquired" date="2025-07-17T06:36:25.684" /><!-- duration: 16ms -->
+  <step title="Creating temporary deployment" date="2025-07-17T06:36:25.700" /><!-- duration: 109ms -->
+  <step title="Performing fetch based deployment" date="2025-07-17T06:36:25.840" >
+    <step title="Fetching changes." date="2025-07-17T06:36:26.043" /><!-- duration: 64ms -->
+    <step title="Starting LocalZipHandler" date="2025-07-17T06:36:26.126" /><!-- duration: 11ms -->
+    <step title="Cleaning up temp folders from previous zip deployments and extracting pushed zip file C:\local\Temp\zipdeploy\xnizi5yb.zip (68.40 MB) to C:\local\Temp\zipdeploy\extracted" date="2025-07-17T06:36:26.328" /><!-- duration: 12ms -->
+    <step title="Cleaning up temp folders from previous zip deployments and extracting pushed zip file C:\local\Temp\zipdeploy\xnizi5yb.zip (68.40 MB) to C:\local\Temp\zipdeploy\extracted" date="2025-07-17T06:36:26.356" >
+      <step title="Renaming extractTargetDirectory(C:\local\Temp\zipdeploy\extracted) to tempDirectory(C:\local\Temp\zipdeploy\wsfmdkq3.p40)" date="2025-07-17T06:36:26.356" /><!-- duration: 16ms -->
+      <step title="Extracting 175 entries to C:\local\Temp\zipdeploy\extracted directory" date="2025-07-17T06:36:26.418" >
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\Azure.AI.OpenAI.dll ..." date="2025-07-17T06:36:26.435" /><!-- duration: 233ms -->
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\Azure.AI.Projects.dll ..." date="2025-07-17T06:36:26.715" /><!-- duration: 250ms -->
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\Azure.Core.dll ..." date="2025-07-17T06:36:27.246" /><!-- duration: 48ms -->
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\Azure.Identity.dll ..." date="2025-07-17T06:36:27.343" /><!-- duration: 52ms -->
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\Microsoft.AspNetCore.OpenApi.dll ..." date="2025-07-17T06:36:27.405" /><!-- duration: 13ms -->
+        <step title="Omitting extracting file traces ..." date="2025-07-17T06:36:27.418" /><!-- duration: 31ms -->
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\web.config ..." date="2025-07-17T06:36:40.856" /><!-- duration: 47ms -->
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\zh-Hans\Microsoft.VisualStudio.Threading.resources.dll ..." date="2025-07-17T06:36:40.922" /><!-- duration: 12ms -->
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\zh-Hans\Microsoft.VisualStudio.Validation.resources.dll ..." date="2025-07-17T06:36:40.951" /><!-- duration: 0ms -->
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\zh-Hant\Microsoft.VisualStudio.Threading.resources.dll ..." date="2025-07-17T06:36:40.965" /><!-- duration: 16ms -->
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\zh-Hant\Microsoft.VisualStudio.Validation.resources.dll ..." date="2025-07-17T06:36:40.981" /><!-- duration: 16ms -->
+      </step><!-- duration: 14594ms -->
+    </step><!-- duration: 14656ms -->
+    <step title="Before sending BuildRequestReceived status to /api/updatedeploystatus" date="2025-07-17T06:36:41.028" /><!-- duration: 16ms -->
+    <step title="DeploymentManager.Deploy(id:e36410e7527b4fc08ef96553b55a9491)" date="2025-07-17T06:36:41.043" >
+      <step title="Collecting changeset information" date="2025-07-17T06:36:41.075" /><!-- duration: 797ms -->
+      <step title="Updating submodules" date="2025-07-17T06:36:41.887" >
+        <step title="Updating submodules." date="2025-07-17T06:36:42.137" /><!-- duration: 48ms -->
+      </step><!-- duration: 376ms -->
+      <step title="Preparing deployment for commit id &apos;e36410e752&apos;." date="2025-07-17T06:36:42.467" /><!-- duration: 14ms -->
+      <step title="Determining deployment builder" date="2025-07-17T06:36:42.637" >
+        <step title="Builder is BasicBuilder" date="2025-07-17T06:36:42.653" /><!-- duration: 16ms -->
+      </step><!-- duration: 47ms -->
+      <step title="Copying SSH keys" date="2025-07-17T06:36:42.715" /><!-- duration: 16ms -->
+      <step title="Building" date="2025-07-17T06:36:42.731" >
+        <step title="Generating deployment script." date="2025-07-17T06:36:42.874" /><!-- duration: 0ms -->
+        <step title="Generating deployment script" date="2025-07-17T06:36:42.889" >
+          <step title="Using cached version of the deployment script for command: -y --no-dot-deployment -r &quot;C:\local\Temp\zipdeploy\extracted&quot; -o &quot;C:\home\site\deployments\tools&quot; --basic --sitePath &quot;C:\local\Temp\zipdeploy\extracted&quot;" date="2025-07-17T06:36:42.967" /><!-- duration: 0ms -->
+          <step title="Using cached version of deployment script (command: &apos;azure -y --no-dot-deployment -r &quot;C:\local\Temp\zipdeploy\extracted&quot; -o &quot;C:\home\site\deployments\tools&quot; --basic --sitePath &quot;C:\local\Temp\zipdeploy\extracted&quot;&apos;)." date="2025-07-17T06:36:42.983" /><!-- duration: 16ms -->
+        </step><!-- duration: 125ms -->
+        <step title="Running deployment command..." date="2025-07-17T06:36:43.283" /><!-- duration: 204ms -->
+        <step title="Command: &quot;C:\home\site\deployments\tools\deploy.cmd&quot;" date="2025-07-17T06:36:43.608" /><!-- duration: 16ms -->
+        <step title="Executing external process" date="2025-07-17T06:36:43.674" type="process" path="starter.cmd" arguments="&quot;C:\home\site\deployments\tools\deploy.cmd&quot;" >
+          <step title="Handling Basic Web Site deployment." date="2025-07-17T06:36:44.908" /><!-- duration: 29ms -->
+          <step title="Creating app_offline.htm" date="2025-07-17T06:36:49.516" /><!-- duration: 19ms -->
+          <step title="KuduSync.NET from: &apos;C:\local\Temp\zipdeploy\extracted&apos; to: &apos;C:\home\site\wwwroot&apos;" date="2025-07-17T06:36:49.593" /><!-- duration: 31ms -->
+          <step title="Deleting file: &apos;FFMpegCore.dll&apos;" date="2025-07-17T06:36:49.702" /><!-- duration: 17ms -->
+          <step title="Deleting file: &apos;FFMpegCore.Extensions.SkiaSharp.dll&apos;" date="2025-07-17T06:36:50.066" /><!-- duration: 89ms -->
+          <step title="Deleting file: &apos;Instances.dll&apos;" date="2025-07-17T06:36:50.311" /><!-- duration: 220ms -->
+          <step title="Deleting file: &apos;SkiaSharp.dll&apos;" date="2025-07-17T06:36:51.359" /><!-- duration: 108ms -->
+          <step title="Deleting file: &apos;System.IO.Pipelines.dll&apos;" date="2025-07-17T06:36:51.689" /><!-- duration: 294ms -->
+          <step title="Deleting file: &apos;System.Text.Encodings.Web.dll&apos;" date="2025-07-17T06:36:52.235" /><!-- duration: 155ms -->
+          <step title="Deleting file: &apos;System.Text.Json.dll&apos;" date="2025-07-17T06:36:52.565" /><!-- duration: 59ms -->
+          <step title="Copying file: &apos;Newtonsoft.Json.dll&apos;" date="2025-07-17T06:36:52.905" /><!-- duration: 127ms -->
+          <step title="Copying file: &apos;SemanticClip.API&apos;" date="2025-07-17T06:36:53.333" /><!-- duration: 156ms -->
+          <step title="Copying file: &apos;SemanticClip.API.deps.json&apos;" date="2025-07-17T06:36:53.780" /><!-- duration: 156ms -->
+          <step title="Copying file: &apos;SemanticClip.API.dll&apos;" date="2025-07-17T06:36:54.186" /><!-- duration: 109ms -->
+          <step title="Copying file: &apos;SemanticClip.API.pdb&apos;" date="2025-07-17T06:36:54.457" /><!-- duration: 106ms -->
+          <step title="Copying file: &apos;SemanticClip.API.runtimeconfig.json&apos;" date="2025-07-17T06:36:54.767" /><!-- duration: 78ms -->
+          <step title="Copying file: &apos;SemanticClip.Services.dll&apos;" date="2025-07-17T06:36:55.049" /><!-- duration: 126ms -->
+          <step title="Copying file: &apos;SemanticClip.Services.pdb&apos;" date="2025-07-17T06:36:55.421" /><!-- duration: 156ms -->
+          <step title="Copying file: &apos;Xabe.FFmpeg.dll&apos;" date="2025-07-17T06:36:55.848" /><!-- duration: 89ms -->
+          <step title="Copying file: &apos;Xabe.FFmpeg.Downloader.dll&apos;" date="2025-07-17T06:36:56.032" /><!-- duration: 359ms -->
+          <step title="Copying file: &apos;ffmpeg\version.json&apos;" date="2025-07-17T06:36:56.906" /><!-- duration: 108ms -->
+          <step title="Deleting file: &apos;runtimes\browser\lib\net8.0\System.Text.Encodings.Web.dll&apos;" date="2025-07-17T06:36:57.780" /><!-- duration: 484ms -->
+          <step title="Deleting directory: &apos;runtimes\browser\lib\net8.0&apos;" date="2025-07-17T06:36:59.658" /><!-- duration: 49ms -->
+          <step title="Deleting directory: &apos;runtimes\browser\lib&apos;" date="2025-07-17T06:36:59.814" /><!-- duration: 77ms -->
+          <step title="Deleting directory: &apos;runtimes\browser&apos;" date="2025-07-17T06:37:00.171" /><!-- duration: 378ms -->
+          <step title="Deleting file: &apos;runtimes\linux-musl-x64\native\libSkiaSharp.so&apos;" date="2025-07-17T06:37:00.858" /><!-- duration: 157ms -->
+          <step title="Deleting directory: &apos;runtimes\linux-musl-x64\native&apos;" date="2025-07-17T06:37:01.436" /><!-- duration: 35ms -->
+          <step title="Deleting directory: &apos;runtimes\linux-musl-x64&apos;" date="2025-07-17T06:37:01.500" /><!-- duration: 30ms -->
+          <step title="Deleting file: &apos;runtimes\osx\native\libSkiaSharp.dylib&apos;" date="2025-07-17T06:37:01.546" /><!-- duration: 16ms -->
+          <step title="Deleting directory: &apos;runtimes\osx\native&apos;" date="2025-07-17T06:37:01.593" /><!-- duration: 31ms -->
+          <step title="Deleting directory: &apos;runtimes\osx&apos;" date="2025-07-17T06:37:01.690" /><!-- duration: 266ms -->
+          <step title="Deleting file: &apos;runtimes\linux-arm\native\libSkiaSharp.so&apos;" date="2025-07-17T06:37:02.030" /><!-- duration: 0ms -->
+          <step title="Deleting file: &apos;runtimes\linux-arm64\native\libSkiaSharp.so&apos;" date="2025-07-17T06:37:02.077" /><!-- duration: 65ms -->
+          <step title="Deleting file: &apos;runtimes\linux-x64\native\libSkiaSharp.so&apos;" date="2025-07-17T06:37:02.155" /><!-- duration: 16ms -->
+          <step title="Deleting file: &apos;runtimes\win-arm64\native\libSkiaSharp.dll&apos;" date="2025-07-17T06:37:02.233" /><!-- duration: 0ms -->
+          <step title="Deleting file: &apos;runtimes\win-x64\native\libSkiaSharp.dll&apos;" date="2025-07-17T06:37:02.358" /><!-- duration: 95ms -->
+          <step title="Deleting file: &apos;runtimes\win-x86\native\libSkiaSharp.dll&apos;" date="2025-07-17T06:37:02.483" /><!-- duration: 31ms -->
+          <step title="Deleting app_offline.htm" date="2025-07-17T06:37:02.530" /><!-- duration: 16ms -->
+          <step title="Finished successfully." date="2025-07-17T06:37:02.546" /><!-- duration: 16ms -->
+        </step><!-- duration: 18935ms -->
+        <step title="Running post deployment command(s)..." date="2025-07-17T06:37:03.081" /><!-- duration: 12ms -->
+        <step title="Triggering recycle (preview mode disabled)." date="2025-07-17T06:37:03.343" /><!-- duration: 31ms -->
+        <step title="Ignoring FS watcher based recycle request as this is a classic Windows app." date="2025-07-17T06:37:03.392" /><!-- duration: 29ms -->
+        <step title="Deployment successful. DEPLOYMENTINFO: deploymentPath = ZipDeploy. Extract zip. , deployer = ZipDeploy, os = windows, sku = Basic, siteName = app-api-wed53brj6q336, siteHostName = app-api-wed53brj6q336.azurewebsites.net, deploymentStatus = Success" date="2025-07-17T06:37:03.874" /><!-- duration: 31ms -->
+      </step><!-- duration: 21585ms -->
+    </step><!-- duration: 23596ms -->
+    <step title="Cleaning up temp files" date="2025-07-17T06:37:04.659" /><!-- duration: 29ms -->
+    <step title="Skip function trigger and logicapp sync because function is not enabled." date="2025-07-17T06:37:04.891" /><!-- duration: 30ms -->
+  </step><!-- duration: 39226ms -->
+  <step title="LockFile &apos;C:\home\site\locks\deployments.lock&apos; released" date="2025-07-17T06:37:05.124" /><!-- duration: 31ms -->
+  <step title="Deleting shutdown sentinel file" date="2025-07-17T06:37:05.202" SemaphoreCount="8" /><!-- duration: 48ms -->
+</step><!-- duration: 39724ms -->

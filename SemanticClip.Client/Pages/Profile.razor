@@ -1,0 +1,51 @@
+@page "/profile"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Components.Authorization
+
+<PageTitle>Profile</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h4" Class="mb-4">User Profile</MudText>
+        
+        <AuthorizeView>
+            <Authorized>
+                <MudGrid>
+                    <MudItem xs="12" md="6">
+                        <MudText Typo="Typo.h6">Name:</MudText>
+                        <MudText>@context.User.Identity?.Name</MudText>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudText Typo="Typo.h6">Email:</MudText>
+                        <MudText>@context.User.FindFirst("email")?.Value</MudText>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.h6">Claims:</MudText>
+                        <MudSimpleTable>
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var claim in context.User.Claims)
+                                {
+                                    <tr>
+                                        <td>@claim.Type</td>
+                                        <td>@claim.Value</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </MudSimpleTable>
+                    </MudItem>
+                </MudGrid>
+            </Authorized>
+            <NotAuthorized>
+                <MudAlert Severity="Severity.Warning">
+                    You must be logged in to view your profile.
+                </MudAlert>
+            </NotAuthorized>
+        </AuthorizeView>
+    </MudPaper>
+</MudContainer>

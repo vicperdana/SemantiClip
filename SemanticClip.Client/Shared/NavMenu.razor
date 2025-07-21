@@ -1,0 +1,49 @@
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="oi oi-home" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+        <AuthorizeView>
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="profile">
+                        <span class="oi oi-person" aria-hidden="true"></span> Profile
+                    </NavLink>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+    </nav>
+</div>
+
+<style>
+    .nav-scrollable {
+        max-height: calc(100vh - 3.5rem);
+        overflow-y: auto;
+    }
+
+    .nav-item {
+        padding: 0.5rem;
+    }
+
+    .nav-link {
+        display: flex;
+        align-items: center;
+        color: #d7d7d7;
+        text-decoration: none;
+        padding: 0.5rem 0;
+    }
+
+    .nav-link:hover {
+        color: #ffffff;
+        background-color: rgba(255,255,255,.1);
+        border-radius: 4px;
+    }
+
+    .nav-link.active {
+        color: #ffffff;
+        background-color: rgba(255,255,255,.25);
+        border-radius: 4px;
+    }
+</style>

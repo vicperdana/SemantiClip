@@ -1,0 +1,18 @@
+<step title="Incoming Request" date="2025-07-17T07:17:25.151" instance="d13c54" url="/api/zipdeploy?isAsync=true" method="POST" type="request" pid="7376,3,17" Content-Length="71728346" Content-Type="application/octet-stream" Accept="application/json" Accept-Encoding="gzip" Authorization="Bea..." Host="app-api-wed53brj6q336.scm.azurewebsites.net" User-Agent="azsdk-go-zip-deploy/1.0.0 (go1.24.0 X:loopvar; darwin),azdev/1.17.2 (Go go1.24.0 X:loopvar; darwin/arm64)" X-Ms-Correlation-Request-Id="6b5853ce2205eb31ef2febdbd771520d" X-ARR-LOG-ID="6b5853ce-2205-eb31-ef2f-ebdbd771520d" CLIENT-IP="167.220.242.74:10416" X-SITE-DEPLOYMENT-ID="app-api-wed53brj6q336" WAS-DEFAULT-HOSTNAME="app-api-wed53brj6q336.scm.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/zipdeploy?isAsync=true" >
+  <step title="Cleanup Xml Logs" date="2025-07-17T07:17:25.387" /><!-- duration: 138ms -->
+  <step title="ZipPushDeploy" date="2025-07-17T07:17:25.994" >
+    <step title="ZipDeploy. Extract zip. " date="2025-07-17T07:17:26.041" /><!-- duration: 19ms -->
+    <step title="Starting PushDeployAsync" date="2025-07-17T07:17:26.108" /><!-- duration: 11ms -->
+    <step title="Updating shutdown sentinel last write time" date="2025-07-17T07:17:26.420" SemaphoreCount="7" /><!-- duration: 11ms -->
+    <step title="LockFile &apos;C:\home\site\locks\deployments.lock&apos; acquired" date="2025-07-17T07:17:26.449" /><!-- duration: 30ms -->
+    <step title="Saving request content to C:\local\Temp\zipdeploy\engxu3r2.zip" date="2025-07-17T07:17:26.525" >
+      <step title="Writing 58,802,176 bytes to C:\local\Temp\zipdeploy\engxu3r2.zip" date="2025-07-17T07:17:56.747" /><!-- duration: 29ms -->
+      <step title="Total 71,728,346 bytes written to C:\local\Temp\zipdeploy\engxu3r2.zip" date="2025-07-17T07:18:25.684" /><!-- duration: 48ms -->
+    </step><!-- duration: 59221ms -->
+    <step title="LockFile &apos;C:\home\site\locks\deployments.lock&apos; released" date="2025-07-17T07:18:25.793" /><!-- duration: 17ms -->
+    <step title="Deleting shutdown sentinel file" date="2025-07-17T07:18:25.858" SemaphoreCount="8" /><!-- duration: 13ms -->
+    <step title="Starting FetchDeploy" date="2025-07-17T07:18:25.954" /><!-- duration: 10ms -->
+    <step title="Start deployment in the background" date="2025-07-17T07:18:25.996" /><!-- duration: 612ms -->
+  </step><!-- duration: 60643ms -->
+  <step title="Outgoing response" date="2025-07-17T07:18:26.699" type="response" statusCode="202" statusText="Accepted" Server="Microsoft-IIS/10.0" x-ms-request-id="6b5853ce-2205-eb31-ef2f-ebdbd771520d" Retry-After="30" Cache-Control="private" X-AspNet-Version="4.0.30319" Location="https://app-api-wed53brj6q336.scm.azurewebsites.net/api/deployments/latest?deployer=ZipDeploy&amp;time=2025-07-17_07-18-26Z" /><!-- duration: 35ms -->
+</step><!-- duration: 61595ms -->

@@ -1,0 +1,116 @@
+@page "/login"
+@using Microsoft.AspNetCore.Components.Authorization
+@using SemanticClip.Client.Services
+@inject CustomAuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Login - SemanticClip</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudPaper Class="pa-8" Elevation="4">
+        <div class="d-flex justify-center mb-6">
+            <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Large" Color="Color.Primary" />
+        </div>
+        
+        <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6">
+            SemanticClip Login
+        </MudText>
+
+        <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
+            <DataAnnotationsValidator />
+            
+            <MudTextField @bind-Value="loginModel.Username"
+                         Label="Username"
+                         Variant="Variant.Outlined"
+                         Margin="Margin.Normal"
+                         FullWidth="true"
+                         Required="true"
+                         Class="mb-4" />
+
+            <MudTextField @bind-Value="loginModel.Password"
+                         Label="Password"
+                         Variant="Variant.Outlined"
+                         Margin="Margin.Normal"
+                         FullWidth="true"
+                         Required="true"
+                         InputType="InputType.Password"
+                         Class="mb-6" />
+
+            <MudButton ButtonType="ButtonType.Submit"
+                      Variant="Variant.Filled"
+                      Color="Color.Primary"
+                      FullWidth="true"
+                      Size="Size.Large"
+                      Disabled="@isLoggingIn"
+                      Class="mb-4">
+                @if (isLoggingIn)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    <text>Logging in...</text>
+                }
+                else
+                {
+                    <text>Login</text>
+                }
+            </MudButton>
+        </EditForm>
+
+        <MudDivider Class="my-4" />
+        
+        <MudAlert Severity="Severity.Info" Class="mt-4">
+            <strong>Demo Credentials:</strong><br />
+            Username: <code>admin</code><br />
+            Password: <code>SemanticClip2025!</code>
+        </MudAlert>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private LoginModel loginModel = new();
+    private bool isLoggingIn = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check if already authenticated
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    private async Task HandleLogin()
+    {
+        isLoggingIn = true;
+        
+        try
+        {
+            var success = await AuthStateProvider.LoginAsync(loginModel.Username, loginModel.Password);
+            
+            if (success)
+            {
+                Snackbar.Add("Login successful!", Severity.Success);
+                Navigation.NavigateTo("/");
+            }
+            else
+            {
+                Snackbar.Add("Invalid username or password!", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Login failed: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoggingIn = false;
+        }
+    }
+
+    private class LoginModel
+    {
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}

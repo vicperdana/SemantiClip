@@ -1,0 +1,4 @@
+2025-07-17T07:14:13  PID[8052] Information Found standard collector service installed at path: C:\Program Files\Microsoft Visual Studio 17.0\Team Tools\DiagnosticsHub\Collector\StandardCollector.Service.exe.
+2025-07-17T07:14:13  PID[8052] Information Standard Collector Service executable path: C:\Program Files\Microsoft Visual Studio 17.0\Team Tools\DiagnosticsHub\Collector\StandardCollector.Service.exe
+2025-07-17T07:14:13  PID[8052] Information Found collector service and client in the same folder. Guess this is installed from 64bit remote tools or standard collector installer.
+2025-07-17T07:14:13  PID[8052] Information runtimeVersion: #, stubFilePath: C:\Program Files\Microsoft Visual Studio 17.0\Team Tools\DiagnosticsHub\Collector\amd64\DiagnosticsHub.StandardCollector.Proxy.dll

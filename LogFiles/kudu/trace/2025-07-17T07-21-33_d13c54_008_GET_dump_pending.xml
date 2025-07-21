@@ -1,0 +1,11 @@
+<step title="Incoming Request" date="2025-07-17T07:21:33.864" instance="d13c54" url="/dump" method="GET" type="request" pid="7376,3,18" Accept-Encoding="identity" Authorization="Bea..." Host="app-api-wed53brj6q336.scm.azurewebsites.net" User-Agent="AZURECLI/2.75.0 (HOMEBREW)" x-ms-client-request-id="a77e57a4-62de-11f0-99d3-6e5759424eb9" X-ARR-LOG-ID="a77e57a4-62de-11f0-99d3-6e5759424eb9" CLIENT-IP="167.220.242.74:10706" X-SITE-DEPLOYMENT-ID="app-api-wed53brj6q336" WAS-DEFAULT-HOSTNAME="app-api-wed53brj6q336.scm.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/dump" >
+  <step title="Cleanup Xml Logs" date="2025-07-17T07:21:33.880" /><!-- duration: 31ms -->
+  <step title="ZipStreamContent.OnZip" date="2025-07-17T07:21:33.958" >
+    <step title="Error occurred" date="2025-07-17T07:21:34.302" type="error" text="C:\home\LogFiles\ApplicationInsights\status\status_dw0sdwk0005Q5_268_1.json, System.IO.IOException: The process cannot access the file &apos;C:\home\LogFiles\ApplicationInsights\status\status_dw0sdwk0005Q5_268_1.json&apos; because it is being used by another process.
+   at System.IO.__Error.WinIOError(Int32 errorCode, String maybeFullPath)
+   at System.IO.FileStream.Init(String path, FileMode mode, FileAccess access, Int32 rights, Boolean useRights, FileShare share, Int32 bufferSize, FileOptions options, SECURITY_ATTRIBUTES secAttrs, String msgPath, Boolean bFromProxy, Boolean useLongPath, Boolean checkHost)
+   at System.IO.FileStream..ctor(String path, FileMode mode, FileAccess access, FileShare share, Int32 bufferSize, FileOptions options, String msgPath, Boolean bFromProxy)
+   at System.IO.FileStream..ctor(String path, FileMode mode, FileAccess access, FileShare share, Int32 bufferSize, Boolean useAsync)
+   at System.IO.FileInfo.OpenRead()
+   at System.IO.Abstractions.FileInfoWrapper.OpenRead()
+   at Kudu.Core.Infrastructure.ZipArchiveExtensions.AddFile(ZipArchive zipArchive, FileInfoBase file, ITracer tracer, String directoryNameInArchive)" /><!-- duration: 0ms -->
