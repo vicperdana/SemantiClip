@@ -81,7 +81,7 @@ public sealed class PublishBlogPostExecutor : Executor<BlogPostPublishRequest, B
                 new Azure.AzureKeyCredential(apiKey))
                  .GetChatClient(chatModel)
                  .AsIChatClient()
-                 .CreateAIAgent(instructions: "You are a blog publishing assistant. Use the available GitHub tools to publish blog posts. Create or update markdown files in the repository as needed.",
+                 .CreateAIAgent(instructions: instructions,
                     tools: [.. mcpTools.Cast<AITool>()]);
             
             // Run the agent - it handles the agentic loop automatically
