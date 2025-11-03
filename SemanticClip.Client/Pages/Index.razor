@@ -12,7 +12,10 @@
 @using Microsoft.AspNetCore.Components.Web
 @inject HttpClient Http
 @inject ILogger<Index> Logger
+
 @inject VideoProcessingApiClient VideoProcessingApiClient
+@inject ExportApiClient ExportApiClient
+@inject NavigationManager NavigationManager
 
 <PageTitle>SemanticClip - Video Processing</PageTitle>
 
@@ -28,7 +31,7 @@
                 <MudPaper Class="pa-4 mt-4">
                     <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
                         <MudText Typo="Typo.body2" Class="mb-2" Color="Color.Info">
-                            Maximum file size: 10MB. Supported formats: MP4, AVI, MOV, WMV, MKV
+                            Maximum file size: 1GB (large files stream-upload). Supported formats: MP4, AVI, MOV, WMV, MKV
                         </MudText>
                         <MudFileUpload T="IBrowserFile" FilesChanged="AssignSelectedFile">
                             <ActivatorContent>
@@ -39,17 +42,12 @@
                         @if (videoFile != null)
                         {
                             <MudText Class="mt-2">Selected file: @videoFile.Name (@(FormatFileSize(videoFile.Size)))</MudText>
-                            @if (videoFile.Size > 10485760) // 10MB in bytes
-                            {
-                                <MudAlert Severity="Severity.Error" Class="mt-2">
-                                    File size exceeds the 10MB limit. Please select a smaller file.
-                                </MudAlert>
-                            }
+                            
                         }
                     </MudForm>
 
                     <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@ProcessVideo" 
-                               Disabled="@(isProcessing || videoFile == null || videoFile.Size > 10485760)" Class="mt-4">
+                               Disabled="@(isProcessing || videoFile == null)" Class="mt-4">
                         @if (isProcessing)
                         {
                             <MudProgressCircular Color="Color.Default" Size="Size.Small" Indeterminate="true" Class="mr-2" />
@@ -84,10 +82,42 @@
         @if (!string.IsNullOrEmpty(response?.BlogPost))
         {
             <MudPaper Class="pa-4 mt-4">
-                <MudText Typo="Typo.h6" Class="mb-2">Blog Post</MudText>
+                <MudText Typo="Typo.h6" Class="mb-4">Blog Post</MudText>
                 <MudMarkdown Value="@response.BlogPost" />
+                
+                <MudText Typo="Typo.subtitle1" Class="mt-4 mb-2">Export Options</MudText>
+                <MudGrid>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudSelect T="string" Label="Format" @bind-Value="exportFormat" FullWidth="true">
+                            <MudSelectItem Value="@("docx")">DOCX</MudSelectItem>
+                            <MudSelectItem Value="@("pdf")">PDF</MudSelectItem>
+                            <MudSelectItem Value="@("md")">Markdown</MudSelectItem>
+                            <MudSelectItem Value="@("txt")">Text</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudSelect T="string" Label="Page Size" @bind-Value="exportPageSize" FullWidth="true" Disabled="@IsPageSizeDisabled">
+                            <MudSelectItem Value="@(string.Empty)">Default</MudSelectItem>
+                            <MudSelectItem Value="@("A4")">A4</MudSelectItem>
+                            <MudSelectItem Value="@("Letter")">Letter</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudTextField @bind-Value="exportFileName" Label="File name (no ext)" FullWidth="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="2">
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="@ExportBlogPost" 
+                                   StartIcon="@Icons.Material.Filled.Download" FullWidth="true" Class="mt-4">
+                            Export
+                        </MudButton>
+                    </MudItem>
+                </MudGrid>
+                @if (!string.IsNullOrEmpty(exportError))
+                {
+                    <MudAlert Severity="Severity.Error" Class="mt-2">@exportError</MudAlert>
+                }
             </MudPaper>
-            
+
             <MudPaper Class="pa-4 mt-4">
                 <MudText Typo="Typo.h6" Class="mb-2">MCP Publishing Options</MudText>
                 <MudTextField @bind-Value="mcpCommitMessage" Label="MCP Instructions" 
@@ -125,6 +155,37 @@
     private string errorMessage = string.Empty;
     private string mcpCommitMessage = string.Empty;
     private string publishingMessage = string.Empty;
+    private bool isExporting = false;
+    private string exportError = string.Empty;
+    private string exportFormat = "docx";
+    private string exportPageSize = string.Empty;
+    private string exportFileName = string.Empty;
+    private bool IsPageSizeDisabled => exportFormat != "docx" && exportFormat != "pdf";
+
+    private async Task ExportBlogPostAsDocx()
+    {
+        if (string.IsNullOrEmpty(response?.BlogPost))
+            return;
+        isExporting = true;
+        exportError = string.Empty;
+        try
+        {
+            var fileName = $"BlogPost_{DateTime.Now:yyyyMMdd_HHmmss}.docx";
+            var bytes = await ExportApiClient.ExportDocxAsync(response.BlogPost, fileName);
+            var fileUrl = $"data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{Convert.ToBase64String(bytes)}";
+            await JS.InvokeVoidAsync("downloadFile", fileUrl, fileName);
+        }
+        catch (Exception ex)
+        {
+            exportError = $"Failed to export DOCX: {ex.Message}";
+        }
+        finally
+        {
+            isExporting = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+    [Inject] IJSRuntime JS { get; set; } = default!;
     private Severity publishingAlertSeverity = Severity.Info;
     
     protected override void OnInitialized()
@@ -272,6 +333,33 @@
         {
             isPublishing = false;
             await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task ExportBlogPost()
+    {
+        if (string.IsNullOrEmpty(response?.BlogPost)) return;
+        try
+        {
+            var name = string.IsNullOrWhiteSpace(exportFileName)
+                ? $"BlogPost_{DateTime.Now:yyyyMMdd_HHmmss}"
+                : exportFileName.Trim();
+            var bytes = await ExportApiClient.ExportAsync(response.BlogPost, name, exportFormat, exportPageSize);
+            var mime = exportFormat switch
+            {
+                "docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "pdf" => "application/pdf",
+                "md" => "text/markdown",
+                "txt" => "text/plain",
+                _ => "application/octet-stream"
+            };
+            var fileName = name + "." + exportFormat;
+            var fileUrl = $"data:{mime};base64,{Convert.ToBase64String(bytes)}";
+            await JS.InvokeVoidAsync("downloadFile", fileUrl, fileName);
+        }
+        catch (Exception ex)
+        {
+            exportError = $"Failed to export: {ex.Message}";
         }
     }
 }

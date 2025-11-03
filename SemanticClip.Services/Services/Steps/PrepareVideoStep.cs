@@ -21,9 +21,17 @@ public class PrepareVideoStep : KernelProcessStep
         {
             _logger.LogInformation("Starting PrepareVideoStep for file: {FileName}", request.FileName);
             
+            if (!string.IsNullOrEmpty(request.TempFilePath) && File.Exists(request.TempFilePath))
+            {
+                _logger.LogInformation("Using pre-uploaded temp file at {Path}", request.TempFilePath);
+                _videoPath = request.TempFilePath;
+                await context.EmitEventAsync(new KernelProcessEvent{Id = "VideoPrepared", Data = _videoPath});
+                return _videoPath;
+            }
+            
             if (string.IsNullOrEmpty(request.FileContent))
             {
-                _logger.LogError("File content is null or empty");
+                _logger.LogError("File content is null or empty, and no TempFilePath provided");
                 throw new ArgumentException("File content must be provided");
             }
 
@@ -49,4 +57,4 @@ public class PrepareVideoStep : KernelProcessStep
             throw;
         }
     }
-} 
+}

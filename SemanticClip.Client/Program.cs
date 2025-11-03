@@ -13,7 +13,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 // Configure HttpClient to point to the API
 var apiBaseAddress = builder.HostEnvironment.IsDevelopment() 
-    ? "http://127.0.0.1:5290/" 
+    ? "http://localhost:5290/" 
     : builder.Configuration["ApiBaseAddress"];
 
 // Ensure trailing slash
@@ -64,6 +64,9 @@ builder.Services.AddMudServices(config =>
 builder.Services.AddMudMarkdownServices();
 
 // Register VideoProcessingApiClient
+
+// Register VideoProcessingApiClient and ExportApiClient
 builder.Services.AddScoped<VideoProcessingApiClient>();
+builder.Services.AddScoped<ExportApiClient>();
 
 await builder.Build().RunAsync();

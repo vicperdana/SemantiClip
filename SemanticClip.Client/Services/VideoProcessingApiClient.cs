@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using System.Net.Http.Headers;
 
 namespace SemanticClip.Client.Services;
 
@@ -28,64 +29,44 @@ public class VideoProcessingApiClient
         Console.WriteLine($"Configured max file size: {_maxRequestBodySize} bytes");
     }
 
-   /* public async Task<VideoProcessingResponse> ProcessVideoAsync(VideoProcessingRequest request)
+    public async Task<JobStartResponse> UploadVideoMultipartAsync(IBrowserFile file, string? title = null, string? description = null)
     {
-        using var formData = new MultipartFormDataContent();
-
-        if (!string.IsNullOrEmpty(request.FileContent) && !string.IsNullOrEmpty(request.FileName))
-        {
-            var fileBytes = Convert.FromBase64String(request.FileContent);
-            var stream = new MemoryStream(fileBytes);
-            formData.Add(new StreamContent(stream), "videoFile", request.FileName);
-        }
-
-        var response = await _httpClient.PostAsync("api/VideoProcessing/process", formData);
-        response.EnsureSuccessStatusCode();
-
-        return await response.Content.ReadFromJsonAsync<VideoProcessingResponse>()
-            ?? throw new Exception("Failed to deserialize response");
-    }*/
-
-    /*public async Task<string> TranscribeVideoAsync(Stream videoStream)
-    {
-        Console.WriteLine($"Current max size: {_maxRequestBodySize}, File size: {videoStream.Length}");
-
-        if (videoStream.Length > _maxRequestBodySize)
-        {
-            throw new InvalidOperationException($"File size ({videoStream.Length} bytes) exceeds the maximum allowed size of {_maxRequestBodySize} bytes");
-        }
-
         using var content = new MultipartFormDataContent();
-        content.Add(new StreamContent(videoStream), "videoFile", "video.mp4");
+        var stream = file.OpenReadStream(maxAllowedSize: 1_073_741_824);
+        var streamContent = new StreamContent(stream);
+        streamContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType ?? "application/octet-stream");
+        content.Add(streamContent, "videoFile", file.Name);
+        if (!string.IsNullOrEmpty(title)) content.Add(new StringContent(title), "title");
+        if (!string.IsNullOrEmpty(description)) content.Add(new StringContent(description), "description");
 
-        var response = await _httpClient.PostAsync("api/VideoProcessing/transcribe", content);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadAsStringAsync();
-    }*/
-
+        var response = await _httpClient.PostAsync("api/VideoProcessing/upload-multipart", content);
+        
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            _logger.LogError("Upload failed with {StatusCode}: {Error}", response.StatusCode, errorContent);
+            throw new HttpRequestException($"Upload failed with {response.StatusCode}: {errorContent}");
+        }
+        
+        var job = await response.Content.ReadFromJsonAsync<JobStartResponse>();
+        if (job == null || string.IsNullOrWhiteSpace(job.JobId))
+            throw new InvalidOperationException("Upload succeeded but no job id returned");
+        return job;
+    }
 
     public async Task ProcessVideoAsync(IBrowserFile? videoFile, Func<VideoProcessingProgress, Task>? progressCallback = null)
     {
         try
         {
-            var request = new VideoProcessingRequest();
+            JobStartResponse? jobResponse = null;
 
             if (videoFile != null)
             {
-                using var stream = videoFile.OpenReadStream(maxAllowedSize: 30_000_000); // 30MB max
-                using var memoryStream = new MemoryStream();
-                await stream.CopyToAsync(memoryStream);
-                request.FileName = videoFile.Name;
-                request.FileContent = Convert.ToBase64String(memoryStream.ToArray());
+                // Always use multipart streaming to avoid 413s from JSON/base64 path
+                _logger.LogInformation("Using multipart upload for file: {Size} bytes", videoFile.Size);
+                jobResponse = await UploadVideoMultipartAsync(videoFile);
             }
 
-            _logger.LogInformation("Starting video processing for file: {FileName}", request.FileName);
-
-            // Start the video processing job
-            var response = await _httpClient.PostAsJsonAsync("api/VideoProcessing/process", request);
-            response.EnsureSuccessStatusCode();
-
-            var jobResponse = await response.Content.ReadFromJsonAsync<JobStartResponse>();
             if (jobResponse?.JobId == null)
             {
                 throw new InvalidOperationException("Failed to start video processing job - no job ID returned");

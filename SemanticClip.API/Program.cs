@@ -10,6 +10,7 @@ using SemanticClip.Services.Steps;
 using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
 using Xabe.FFmpeg;
 using Xabe.FFmpeg.Downloader;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,7 +39,11 @@ catch (Exception ex)
 }
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

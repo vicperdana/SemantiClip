@@ -181,4 +181,75 @@ public class VideoProcessingController : ControllerBase
             _jobTrackingService.FailJob(jobId, ex.Message);
         }
     }
+
+    /// <summary>
+    /// Accepts large video uploads via multipart form and starts a processing job.
+    /// </summary>
+    [HttpPost("upload-multipart")]
+    [RequestSizeLimit(1_073_741_824)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 1_073_741_824)]
+    public async Task<IActionResult> UploadMultipartAsync([FromForm] IFormFile videoFile, [FromForm] string? title, [FromForm] string? description)
+    {
+        _logger.LogInformation("UploadMultipartAsync called with videoFile: {HasFile}, title: {Title}, description: {Description}", 
+            videoFile != null, title, description);
+            
+        if (videoFile == null || videoFile.Length == 0)
+        {
+            _logger.LogWarning("No file uploaded or file is empty");
+            return BadRequest("No file uploaded");
+        }
+
+        _logger.LogInformation("File received: {FileName}, Size: {Size} bytes, ContentType: {ContentType}", 
+            videoFile.FileName, videoFile.Length, videoFile.ContentType);
+
+        // Optional: check configured max size if present
+        var maxSizeConfig = HttpContext.RequestServices.GetService<IConfiguration>()?.GetValue<long?>("FileUpload:MaxRequestBodySizeInBytes");
+        if (maxSizeConfig.HasValue && videoFile.Length > maxSizeConfig.Value)
+        {
+            _logger.LogWarning("File exceeds configured limit: {FileSize} > {MaxSize}", videoFile.Length, maxSizeConfig.Value);
+            return BadRequest($"File exceeds configured limit of {maxSizeConfig.Value} bytes");
+        }
+
+        try
+        {
+            // Persist to temp and pass path through request
+            var tempFile = Path.GetTempFileName();
+            var finalPath = Path.ChangeExtension(tempFile, Path.GetExtension(videoFile.FileName));
+            System.IO.File.Move(tempFile, finalPath);
+            
+            _logger.LogInformation("Creating temp file at: {TempPath}", finalPath);
+            
+            await using (var fs = new FileStream(finalPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true))
+            {
+                await videoFile.CopyToAsync(fs);
+            }
+
+            _logger.LogInformation("File saved to temp location: {TempPath}, Size: {Size}", finalPath, new FileInfo(finalPath).Length);
+
+            var request = new VideoProcessingRequest
+            {
+                FileName = videoFile.FileName,
+                Title = title,
+                Description = description,
+                TempFilePath = finalPath
+            };
+
+            var jobId = _jobTrackingService.CreateJob(request);
+            _logger.LogInformation("Created job {JobId} for file {FileName}", jobId, videoFile.FileName);
+            
+            _ = Task.Run(async () => await ProcessVideoInBackgroundAsync(jobId, request));
+
+            return Ok(new JobStartResponse
+            {
+                JobId = jobId,
+                Status = "Started",
+                Message = "Video upload received; processing job started.",
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing multipart upload");
+            return StatusCode(500, new { Error = "Internal server error", Details = ex.Message });
+        }
+    }
 }
