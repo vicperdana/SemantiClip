@@ -6,9 +6,9 @@
 
 > **Note**: This is a proof of concept application and is not intended for production use. It demonstrates the integration of various AI technologies for video processing and content generation.
 
-**NEW**: Added GitHub with ModelContextProtocol (MCP) Integration
+**NEW**: Migrated to Microsoft Agent Framework with GitHub ModelContextProtocol (MCP) Integration
 
-**SemantiClip** is a powerful AI-driven tool that converts videos into structured content by transcribing audio and creating blog posts. Built with .NET, Semantic Kernel and Blazor WebAssembly, it delivers a fast, modern, and responsive user experience.
+**SemantiClip** is a powerful AI-driven tool that converts videos into structured content by transcribing audio and creating blog posts. Built with .NET, Microsoft Agent Framework and Blazor WebAssembly, it delivers a fast, modern, and responsive user experience.
 
 
 ## Table of Contents
@@ -41,7 +41,7 @@
 - 📝 **Blog Post Creation** – Automatically generates readable blog posts from transcripts.
 - 💻 **Modern Web UI** – Built with .NET 9, Blazor WebAssembly, and MudBlazor.
 - 🧩 **Local Content Generation** – Supports on-device LLM processing with Ollama.
-- 🔍 **Semantic Kernel Integration** – Utilizes Semantic Kernel Process and Agent frameworks for enhanced context and orchestration.
+- 🤖 **Microsoft Agent Framework** – Utilizes Microsoft Agent Framework with AI workflows for enhanced orchestration and context management.
 - 📗 **GitHub with ModelContextProtocol Integration** – Publishes blog posts directly to GitHub repositories with ModelContextProtocol.
 
 SemantiClip helps you do more with your video content—faster, smarter, and effortlessly.
@@ -50,8 +50,7 @@ SemantiClip helps you do more with your video content—faster, smarter, and eff
 ## Built With
 
 * [.NET 9](https://dotnet.microsoft.com/)
-* [Semantic Kernel Process Framework](https://learn.microsoft.com/en-us/semantic-kernel/frameworks/process/process-framework)
-* [Semantic Kernel Agent Framework](https://learn.microsoft.com/en-us/semantic-kernel/frameworks/agent/?pivots=programming-language-csharp)
+* [Microsoft Agent Framework](https://github.com/microsoft/agent-framework/) - AI agent orchestration and workflows
 * [Blazor WebAssembly](https://dotnet.microsoft.com/apps/aspnet/web-apps/blazor)
 * [MudBlazor](https://mudblazor.com/) - UI Component Library
 * [Azure OpenAI](https://azure.microsoft.com/en-us/products/cognitive-services/openai-service)

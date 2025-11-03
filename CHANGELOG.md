@@ -6,6 +6,8 @@
 - Added PublishBlogPostStep to handle publishing to GitHub using ModelContextProtocolGitHub integration for blog post publishing using ModelContextProtocol
 - Added UI components to allow users to publish blog posts to GitHub
 
+## [v1.0.0-beta] - 2025-11-04
+- Modular AI workflow processing steps using Microsoft Agent Framework: video transcription, chapter generation, and blog post creation.
 
 ## [v0.1.0] - 2025-04-23
 
