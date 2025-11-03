@@ -4,24 +4,18 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <NoWarn>SKEXP0070;SKEXP0010;SKEXP0080;SKEXP0001;SKEXP0110</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.4" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.4" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.4" />
-    <PackageReference Include="Microsoft.SemanticKernel" Version="1.48.0" />
-    <PackageReference Include="Microsoft.SemanticKernel.Abstractions" Version="1.48.0" />
-    <PackageReference Include="Microsoft.SemanticKernel.Agents.Abstractions" Version="1.48.0" />
-    <PackageReference Include="Microsoft.SemanticKernel.Agents.AzureAI" Version="1.48.0-preview" />
-    <PackageReference Include="Microsoft.SemanticKernel.Agents.Core" Version="1.48.0" />
-    <PackageReference Include="Microsoft.SemanticKernel.Core" Version="1.48.0" />
-    <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.48.0" />
-    <PackageReference Include="Microsoft.SemanticKernel.Process.Abstractions" Version="1.48.0-alpha" />
-    <PackageReference Include="Microsoft.SemanticKernel.Process.Core" Version="1.48.0-alpha" />
-    <PackageReference Include="Microsoft.SemanticKernel.Process.LocalRuntime" Version="1.48.0-alpha" />
-    <PackageReference Include="Microsoft.SemanticKernel.Yaml" Version="1.48.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Agents.AI.Workflows" Version="0.1.0-preview" />
+    <PackageReference Include="Microsoft.Agents.Core" Version="0.1.0-preview" />
+    <PackageReference Include="Azure.AI.OpenAI" Version="2.1.0" />
+    <PackageReference Include="Azure.AI.Projects" Version="1.0.0-beta.7" />
+    <PackageReference Include="Azure.Identity" Version="1.13.2" />
+    <PackageReference Include="YamlDotNet" Version="16.2.1" />
     <PackageReference Include="Xabe.FFmpeg" Version="5.2.6" />
     <PackageReference Include="Xabe.FFmpeg.Downloader" Version="5.2.6" />
   </ItemGroup>

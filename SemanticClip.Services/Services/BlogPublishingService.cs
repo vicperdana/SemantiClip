@@ -1,10 +1,10 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Process;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Agents.AI.Workflows;
 using SemanticClip.Core.Interfaces;
 using SemanticClip.Core.Models;
-using SemanticClip.Services.Steps;
+using SemanticClip.Services.Executors;
 using SemanticClip.Services.Utilities;
 
 namespace SemanticClip.Services;
@@ -12,75 +12,64 @@ namespace SemanticClip.Services;
 public class BlogPublishingService : IBlogPublishingService
 {
     private readonly IConfiguration _configuration;
-    private readonly Kernel _kernel;
     private readonly ILogger<BlogPublishingService> _logger;
+    private readonly IServiceProvider _serviceProvider;
 
-    public BlogPublishingService(IConfiguration configuration, ILogger<BlogPublishingService> logger)
+    public BlogPublishingService(
+        IConfiguration configuration, 
+        ILogger<BlogPublishingService> logger,
+        IServiceProvider serviceProvider)
     {
         _configuration = configuration;
         _logger = logger;
-
-        // Create the kernel
-        var builder = Kernel.CreateBuilder();
-        
-        // Use Azure OpenAI for chat completion agent
-        builder.AddAzureOpenAIChatCompletion(
-            _configuration["AzureOpenAI:ContentDeploymentName"]!,
-            _configuration["AzureOpenAI:Endpoint"]!,
-            _configuration["AzureOpenAI:ApiKey"]!);
-        
-        _kernel = builder.Build();
+        _serviceProvider = serviceProvider;
 
         // Set up MCP configuration
-        MCPConfig.GitHubPersonalAccessToken = _configuration["GitHub:PersonalAccessToken"]!;
+        var githubToken = _configuration["GitHub:PersonalAccessToken"];
+        if (!string.IsNullOrEmpty(githubToken))
+        {
+            MCPConfig.GitHubPersonalAccessToken = githubToken;
+        }
     }
 
     public async Task<BlogPublishingResponse> PublishBlogPostAsync(BlogPostPublishRequest request)
     {
         try
         {
-            // Create a new Semantic Kernel process
-            ProcessBuilder processBuilder = new("BlogPublishingWorkflow");
+            _logger.LogInformation("Starting blog post publishing workflow");
             
-            // Add the publishing step
-            var publishBlogPostStep = processBuilder.AddStepFromType<PublishBlogPostStep>();
+            // Create executor
+            var publishExecutor = _serviceProvider.GetRequiredService<PublishBlogPostExecutor>();
             
-            // Orchestrate the process
-            processBuilder
-                .OnInputEvent("Start")
-                .SendEventTo(new(publishBlogPostStep, functionName: PublishBlogPostStep.Functions.PublishBlogPost,
-                    parameterName: "request"));
-
-            // Build the process
-            var process = processBuilder.Build();
+            // Build simple workflow with single executor
+            WorkflowBuilder builder = new(publishExecutor);
+            builder.WithOutputFrom(publishExecutor);
+            var workflow = builder.Build();
             
-            // Execute the workflow
-            var initialResult = await process.StartAsync(_kernel, new KernelProcessEvent{Id = "Start", Data = request});
-            var finalState = await initialResult.GetStateAsync();
-            var finalCompletion = finalState.ToProcessStateMetadata();
+            // Execute
+            _logger.LogInformation("Executing blog publishing workflow");
+            Run run = await InProcessExecution.RunAsync(workflow, request);
             
-            // Get the completion step state
-            if (finalCompletion.StepsState!["PublishBlogPostStep"].State is not BlogPublishingResponse blogPublishingResponse)
+            // Get result
+            BlogPublishingResponse? result = null;
+            foreach (WorkflowEvent evt in run.NewEvents)
             {
-                // Try to get the state from the step state directly
-                if (finalCompletion.StepsState.TryGetValue("PublishBlogPostStep", out var stepState) && 
-                    stepState.State is BlogPublishingResponse responseFromState)
+                if (evt is ExecutorCompletedEvent completedEvent)
                 {
-                    return responseFromState;
+                    _logger.LogInformation("Executor completed: {ExecutorId}", completedEvent.ExecutorId);
+                    
+                    if (completedEvent.Data is BlogPublishingResponse response)
+                    {
+                        result = response;
+                    }
                 }
-                
-                // Fallback to checking the final state
-                if (finalCompletion.State is IDictionary<string, object> stateData && 
-                    stateData.TryGetValue("response", out var responseObj) && 
-                    responseObj is BlogPublishingResponse response)
-                {
-                    return response;
-                }
-                
-                throw new InvalidOperationException("Failed to retrieve completion step state or event data");
             }
             
-            return blogPublishingResponse;
+            return result ?? new BlogPublishingResponse 
+            { 
+                Success = false, 
+                Message = "Workflow did not produce result" 
+            };
         }
         catch (Exception ex)
         {

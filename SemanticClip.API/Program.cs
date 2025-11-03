@@ -5,9 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using SemanticClip.Core.Interfaces;
 using SemanticClip.Services;
 using SemanticClip.Services.Services;
-using SemanticClip.Services.Plugins;
-using SemanticClip.Services.Steps;
-using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
+using SemanticClip.Services.Extensions;
 using Xabe.FFmpeg;
 using Xabe.FFmpeg.Downloader;
 using System.Text.Json;
@@ -110,8 +108,8 @@ builder.Services.AddScoped<IVideoProcessingService, VideoProcessingService>();
 builder.Services.AddSingleton<IJobTrackingService, InMemoryJobTrackingService>();
 builder.Services.AddScoped<IBlogPublishingService, BlogPublishingService>();
 
-// Register BlogPublishingController-related services
-builder.Services.AddTransient<PublishBlogPostStep>();
+// Register Agent Framework workflows and executors
+builder.Services.AddSemanticClipWorkflows(builder.Configuration);
 
 // Configure logging
 builder.Services.AddLogging(loggingBuilder =>
@@ -119,31 +117,6 @@ builder.Services.AddLogging(loggingBuilder =>
     loggingBuilder.AddConsole();
     loggingBuilder.AddDebug();
 });
-
-// Register all the Semantic Kernel process steps
-builder.Services.AddTransient<PrepareVideoStep>();
-builder.Services.AddTransient<TranscribeVideoStep>();
-builder.Services.AddTransient<GenerateBlogPostStep>();
-builder.Services.AddTransient<EvaluateBlogPostStep>();
-builder.Services.AddTransient<PublishBlogPostStep>();
-
-
-// Register BlogPostPlugin with proper logger
-builder.Services.AddTransient<BlogPostPlugin>(sp => 
-{
-    var logger = sp.GetRequiredService<ILogger<BlogPostPlugin>>();
-    return new BlogPostPlugin(logger);
-});
-
-// Register PublishBlogPlugin with proper logger
-builder.Services.AddTransient<PublishBlogPlugin>(sp => 
-{
-    var logger = sp.GetRequiredService<ILogger<PublishBlogPlugin>>();
-    return new PublishBlogPlugin(logger);
-});
-
-// Register KernelService
-//builder.Services.AddScoped<IKernelService, KernelService>();
 
 var app = builder.Build();
 

@@ -1,25 +1,37 @@
+using Microsoft.Agents.AI.Workflows;
 using Microsoft.Extensions.Logging;
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.AudioToText;
-using Microsoft.SemanticKernel.Process;
-using System.Text;
 using Xabe.FFmpeg;
 using SemanticClip.Services.Utils;
+using SemanticClip.Services.Services;
 
-namespace SemanticClip.Services.Steps;
+namespace SemanticClip.Services.Executors;
 
-public class TranscribeVideoStep : KernelProcessStep
+/// <summary>
+/// Second executor: extracts audio from video and transcribes using Azure OpenAI Whisper
+/// </summary>
+public sealed class TranscribeVideoExecutor : Executor<string, string>
 {
-    private string _transcript = "";
-    private ILogger _logger = new LoggerFactory().CreateLogger<TranscribeVideoStep>();
-
-    public static class Functions
+    private readonly ILogger<TranscribeVideoExecutor> _logger;
+    private readonly IAudioTranscriptionService _audioService;
+    
+    public TranscribeVideoExecutor(
+        ILogger<TranscribeVideoExecutor> logger,
+        IAudioTranscriptionService audioService) 
+        : base("TranscribeVideoExecutor")
     {
-        public const string TranscribeVideo = nameof(TranscribeVideoStep);
+        _logger = logger;
+        _audioService = audioService;
     }
-
-    [KernelFunction(Functions.TranscribeVideo)]
-    public async Task<string> TranscribeVideoAsync(string videoPath, Kernel kernel, KernelProcessStepContext context)
+    
+    /// <summary>
+    /// Extracts audio from video file and transcribes it to text
+    /// </summary>
+    /// <param name="videoPath">Path to the video file</param>
+    /// <param name="context">Workflow context for accessing services</param>
+    /// <returns>Transcribed text from the video's audio</returns>
+    public override async ValueTask<string> HandleAsync(
+        string videoPath, 
+        IWorkflowContext context)
     {
         // Ensure FFMpeg is configured and binaries are available
         await FFMpegConfiguration.EnsureFFMpegAsync(_logger);
@@ -29,10 +41,15 @@ public class TranscribeVideoStep : KernelProcessStep
         
         try
         {
+            // Extract audio from video
             await ExtractAudioFromVideoAsync(videoPath, outputAudioPath);
-            _transcript = await TranscribeAudioFileAsync(outputAudioPath, kernel);
-            await context.EmitEventAsync("TranscriptionComplete", _transcript);
-            return _transcript;
+            
+            // Transcribe audio using injected service
+            var transcript = await _audioService.TranscribeAsync(outputAudioPath, CancellationToken.None);
+            
+            _logger.LogInformation("Transcription completed: {Length} characters", transcript.Length);
+            
+            return transcript;
         }
         catch (Exception ex)
         {
@@ -42,6 +59,7 @@ public class TranscribeVideoStep : KernelProcessStep
         finally
         {
             CleanupTemporaryFile(outputAudioPath);
+            CleanupTemporaryFile(videoPath);
         }
     }
 
@@ -52,7 +70,7 @@ public class TranscribeVideoStep : KernelProcessStep
         try
         {
             // Use Xabe.FFmpeg to extract audio from video
-            var mediaInfo = await FFmpeg.GetMediaInfo(videoPath);
+            var mediaInfo = await FFmpeg.GetMediaInfo(videoPath, CancellationToken.None);
             var audioStream = mediaInfo.AudioStreams.FirstOrDefault();
             
             if (audioStream == null)
@@ -68,7 +86,7 @@ public class TranscribeVideoStep : KernelProcessStep
                 .AddParameter("-filter:a atempo=2.0") // Speed up audio by 2x
                 .SetOutput(outputAudioPath);
 
-            await conversion.Start();
+            await conversion.Start(CancellationToken.None);
 
             if (!File.Exists(outputAudioPath))
             {
@@ -84,23 +102,6 @@ public class TranscribeVideoStep : KernelProcessStep
         }
     }
 
-    private async Task<string> TranscribeAudioFileAsync(string audioPath, Kernel kernel)
-    {
-        _logger.LogInformation("Transcribing audio: {AudioPath}", audioPath);
-        
-        var audioToTextService = kernel.GetRequiredService<IAudioToTextService>();
-        
-        using var audioFileStream = new FileStream(audioPath, FileMode.Open, FileAccess.Read);
-        var audioFileBinaryData = await BinaryData.FromStreamAsync(audioFileStream);
-        
-        AudioContent audioContent = new(audioFileBinaryData, mimeType: null);
-        
-        var result = await audioToTextService.GetTextContentAsync(audioContent);
-        _logger.LogInformation("Transcription completed successfully");
-        
-        return result.Text ?? throw new InvalidOperationException("Transcription returned null result");
-    }
-
     private void CleanupTemporaryFile(string filePath)
     {
         if (File.Exists(filePath))
@@ -108,11 +109,11 @@ public class TranscribeVideoStep : KernelProcessStep
             try 
             { 
                 File.Delete(filePath);
-                _logger.LogInformation("Deleted temporary audio file: {AudioPath}", filePath);
+                _logger.LogInformation("Deleted temporary file: {FilePath}", filePath);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to delete temporary audio file: {AudioPath}", filePath);
+                _logger.LogWarning(ex, "Failed to delete temporary file: {FilePath}", filePath);
             }
         }
     }
