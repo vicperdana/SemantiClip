@@ -20,6 +20,30 @@
     "gitHubPersonalAccessToken": {
       "value": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
     },
+    "azureOpenAIWhisperDeploymentName": {
+      "value": "${AZURE_OPENAI_WHISPER_DEPLOYMENT_NAME}"
+    },
+    "azureAIAgentConnectionString": {
+      "value": "${AZURE_AI_AGENT_CONNECTION_STRING}"
+    },
+    "azureAIAgentChatModelId": {
+      "value": "${AZURE_AI_AGENT_CHAT_MODEL_ID}"
+    },
+    "azureAIAgentVectorStoreId": {
+      "value": "${AZURE_AI_AGENT_VECTOR_STORE_ID}"
+    },
+    "azureAIAgentBingConnectionId": {
+      "value": "${AZURE_AI_AGENT_BING_CONNECTION_ID=}"
+    },
+    "azureAIAgentMaxEvaluations": {
+      "value": "${AZURE_AI_AGENT_MAX_EVALUATIONS=3}"
+    },
+    "fileUploadMaxRequestBodySize": {
+      "value": "${FILE_UPLOAD_MAX_REQUEST_BODY_SIZE=1073741824}"
+    },
+    "fileUploadAllowedExtensions": {
+      "value": "${FILE_UPLOAD_ALLOWED_EXTENSIONS=.mp4,.avi,.mov,.wmv,.mkv}"
+    },
     "customDomainName": {
       "value": "semanticlip.vicperdana.com"
     },

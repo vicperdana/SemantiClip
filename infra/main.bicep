@@ -27,6 +27,31 @@ param azureOpenAIContentDeploymentName string
 @description('GitHub Personal Access Token')
 param gitHubPersonalAccessToken string
 
+@description('Azure OpenAI Whisper Deployment Name')
+param azureOpenAIWhisperDeploymentName string = 'whisper'
+
+@secure()
+@description('Azure AI Agent Connection String')
+param azureAIAgentConnectionString string
+
+@description('Azure AI Agent Chat Model ID')
+param azureAIAgentChatModelId string = 'gpt-4o'
+
+@description('Azure AI Agent Vector Store ID')
+param azureAIAgentVectorStoreId string = 'semanticclipproject'
+
+@description('Azure AI Agent Bing Connection ID (optional)')
+param azureAIAgentBingConnectionId string = ''
+
+@description('Azure AI Agent Max Evaluations')
+param azureAIAgentMaxEvaluations int = 3
+
+@description('File Upload Max Request Body Size in Bytes')
+param fileUploadMaxRequestBodySize int = 1073741824
+
+@description('File Upload Allowed Extensions')
+param fileUploadAllowedExtensions string = '.mp4,.avi,.mov,.wmv,.mkv'
+
 @description('Custom domain name for the API service')
 param customDomainName string = 'semanticlip.vicperdana.com'
 
@@ -121,16 +146,26 @@ resource gitHubTokenSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   }
 }
 
+// Store Azure AI Agent Connection String in Key Vault
+resource azureAIAgentConnectionStringSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'azure-ai-agent-connection-string'
+  properties: {
+    value: azureAIAgentConnectionString
+  }
+}
+
 // Create App Service Plan for both applications
+// NOTE: Using B1 (Basic) tier - upgrade to P1V2 (PremiumV2) for production video processing
 resource appServicePlan 'Microsoft.Web/serverfarms@2024-04-01' = {
   name: 'asp-${resourceToken}'
   location: location
   tags: tags
   sku: {
-    name: 'B1'
-    tier: 'Basic'
-    size: 'B1'
-    family: 'B'
+    name: 'P0V4'
+    tier: 'PremiumV4'
+    size: 'P0V4'
+    family: 'Pv4'
     capacity: 1
   }
   properties: {
@@ -174,8 +209,56 @@ resource apiAppService 'Microsoft.Web/sites@2024-04-01' = {
           value: azureOpenAIContentDeploymentName
         }
         {
+          name: 'AzureOpenAI__WhisperDeploymentName'
+          value: azureOpenAIWhisperDeploymentName
+        }
+        {
           name: 'AzureOpenAI__ApiKey'
           value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=${azureOpenAIApiKeySecret.name})'
+        }
+        {
+          name: 'AzureAIAgent__ConnectionString'
+          value: '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=${azureAIAgentConnectionStringSecret.name})'
+        }
+        {
+          name: 'AzureAIAgent__ChatModelId'
+          value: azureAIAgentChatModelId
+        }
+        {
+          name: 'AzureAIAgent__VectorStoreId'
+          value: azureAIAgentVectorStoreId
+        }
+        {
+          name: 'AzureAIAgent__BingConnectionId'
+          value: azureAIAgentBingConnectionId
+        }
+        {
+          name: 'AzureAIAgent__MaxEvaluations'
+          value: string(azureAIAgentMaxEvaluations)
+        }
+        {
+          name: 'FileUpload__MaxRequestBodySizeInBytes'
+          value: string(fileUploadMaxRequestBodySize)
+        }
+        {
+          name: 'FileUpload__AllowedExtensions'
+          value: fileUploadAllowedExtensions
+        }
+        {
+          name: 'FFmpeg__Path'
+          value: 'ffmpeg'
+        }
+        {
+          name: 'FFmpeg__TimeoutMinutes'
+          value: '5'
+        }
+        {
+          name: 'FFmpeg__AudioSampleRate'
+          value: '16000'
+        }
+        {
+          name: 'FFmpeg__AudioChannels'
+          value: '1'
         }
         {
           name: 'GitHub__PersonalAccessToken'
@@ -184,7 +267,6 @@ resource apiAppService 'Microsoft.Web/sites@2024-04-01' = {
       ]
       cors: {
         allowedOrigins: [
-          'https://${clientCustomDomainName}'
           '*'
         ]
         supportCredentials: false
@@ -257,6 +339,52 @@ resource clientCustomDomain 'Microsoft.Web/sites/hostNameBindings@2024-04-01' = 
   }
 }
 */
+
+// Update API CORS settings with Client URL after Client is created
+resource apiCorsConfig 'Microsoft.Web/sites/config@2024-04-01' = {
+  parent: apiAppService
+  name: 'web'
+  properties: {
+    cors: {
+      allowedOrigins: [
+        'https://${clientAppService.properties.defaultHostName}'
+      ]
+      supportCredentials: false
+    }
+  }
+  dependsOn: [
+    clientAppService
+  ]
+}
+
+// Update API app settings with Client URL for CORS configuration
+resource apiAppSettingsUpdate 'Microsoft.Web/sites/config@2024-04-01' = {
+  parent: apiAppService
+  name: 'appsettings'
+  properties: {
+    APPLICATIONINSIGHTS_CONNECTION_STRING: applicationInsights.properties.ConnectionString
+    'AzureOpenAI__Endpoint': azureOpenAIEndpoint
+    'AzureOpenAI__ContentDeploymentName': azureOpenAIContentDeploymentName
+    'AzureOpenAI__WhisperDeploymentName': azureOpenAIWhisperDeploymentName
+    'AzureOpenAI__ApiKey': '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=${azureOpenAIApiKeySecret.name})'
+    'AzureAIAgent__ConnectionString': '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=${azureAIAgentConnectionStringSecret.name})'
+    'AzureAIAgent__ChatModelId': azureAIAgentChatModelId
+    'AzureAIAgent__VectorStoreId': azureAIAgentVectorStoreId
+    'AzureAIAgent__BingConnectionId': azureAIAgentBingConnectionId
+    'AzureAIAgent__MaxEvaluations': string(azureAIAgentMaxEvaluations)
+    'FileUpload__MaxRequestBodySizeInBytes': string(fileUploadMaxRequestBodySize)
+    'FileUpload__AllowedExtensions': fileUploadAllowedExtensions
+    'FFmpeg__Path': 'ffmpeg'
+    'FFmpeg__TimeoutMinutes': '5'
+    'FFmpeg__AudioSampleRate': '16000'
+    'FFmpeg__AudioChannels': '1'
+    'Cors__AllowedOrigins__0': 'https://${clientAppService.properties.defaultHostName}'
+    'GitHub__PersonalAccessToken': '@Microsoft.KeyVault(VaultName=${keyVault.name};SecretName=${gitHubTokenSecret.name})'
+  }
+  dependsOn: [
+    clientAppService
+  ]
+}
 
 // Configure diagnostic settings for API App Service
 resource apiAppServiceDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
