@@ -27,7 +27,7 @@ public static class ServiceCollectionExtensions
             return new AzureOpenAIClient(new Uri(endpoint), new Azure.AzureKeyCredential(apiKey));
         });
         
-        // Register audio transcription service wrapper
+        // Register audio transcription service
         services.AddSingleton<IAudioTranscriptionService, AzureOpenAIAudioService>();
         
         // Register Azure AI Agent service (if configured)

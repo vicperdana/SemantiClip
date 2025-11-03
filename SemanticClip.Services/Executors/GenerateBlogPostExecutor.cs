@@ -51,11 +51,19 @@ public sealed class GenerateBlogPostExecutor : Executor<string, BlogPostProcessi
                 new SystemChatMessage(promptConfig.Instructions ?? "You are a helpful blog post writer."),
                 new UserChatMessage(promptConfig.UserPrompt?.Replace("{{$transcript}}", transcript) ?? transcript)
             };
+            /*
+            var requestOptions = new ChatCompletionOptions()
+            {
+                MaxOutputTokenCount = 2048,
+                Temperature = 0.2f,
+                TopP = 0.9f,
+            };*/
+
             
             // Generate blog post
             _logger.LogInformation("Calling Azure OpenAI to generate blog post");
             var response = await chatClient.CompleteChatAsync(
-                messages, 
+                messages,
                 cancellationToken: CancellationToken.None);
             
             string blogPost = response.Value.Content[0].Text;

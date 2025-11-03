@@ -29,7 +29,12 @@ public sealed class PrepareVideoExecutor : Executor<VideoProcessingRequest, stri
     {
         try
         {
-            _logger.LogInformation("Starting video preparation for file: {FileName}", request.FileName);
+            _logger.LogInformation("PrepareVideoExecutor started for file: {FileName}", request.FileName);
+            
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request), "Video processing request cannot be null");
+            }
             
             // Check if we already have a temp file path
             if (!string.IsNullOrEmpty(request.TempFilePath) && File.Exists(request.TempFilePath))

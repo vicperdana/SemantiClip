@@ -86,12 +86,14 @@ public class VideoProcessingService : IVideoProcessingService
     
     public async Task<VideoProcessingResponse> ProcessVideoAsync(VideoProcessingRequest request, Action<VideoProcessingProgress>? progressCallback = null)
     {
+        // Save original callback to restore later
+        var originalCallback = _progressCallback;
+        
         try
         {
             _logger.LogInformation("Starting video processing for file: {FileName}", request.FileName);
             
             // Set the progress callback for this specific operation
-            var originalCallback = _progressCallback;
             _progressCallback = progressCallback;
             
             UpdateProgress("Starting", 5, "Initializing video processing workflow...");
@@ -119,9 +121,20 @@ public class VideoProcessingService : IVideoProcessingService
             
             // Execute the workflow
             _logger.LogInformation("Starting workflow execution");
-            Run run = await InProcessExecution.RunAsync(
-                workflow, 
-                request);
+            Run run;
+            try
+            {
+                run = await InProcessExecution.RunAsync(
+                    workflow, 
+                    request);
+            }
+            catch (Exception workflowEx)
+            {
+                _logger.LogError(workflowEx, "Workflow execution failed: {Message}. InnerException: {InnerMessage}", 
+                    workflowEx.Message, 
+                    workflowEx.InnerException?.Message ?? "None");
+                throw new InvalidOperationException($"Workflow execution failed: {workflowEx.Message}", workflowEx);
+            }
             
             UpdateProgress("Processing", 90, "Finalizing results...");
             
@@ -172,9 +185,22 @@ public class VideoProcessingService : IVideoProcessingService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing video: {ErrorMessage}", ex.Message);
-            UpdateProgress("Error", 0, "Error occurred", ex.Message);
+            var errorDetails = $"{ex.GetType().Name}: {ex.Message}";
+            if (ex.InnerException != null)
+            {
+                errorDetails += $" | Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}";
+            }
+            
+            _logger.LogError(ex, "Error processing video: {ErrorDetails}. StackTrace: {StackTrace}", 
+                errorDetails, ex.StackTrace);
+            UpdateProgress("Error", 0, "Error occurred", errorDetails);
+            
             throw;
+        }
+        finally
+        {
+            // Restore original callback
+            _progressCallback = originalCallback;
         }
     }
 }

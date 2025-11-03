@@ -5,7 +5,6 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
-    <NoWarn>SKEXP0070;SKEXP0010;SKEXP0080;SKEXP0001;SKEXP0110</NoWarn>
     <UserSecretsId>91c060ad-2964-4b7c-849e-24953f596b68</UserSecretsId>
   </PropertyGroup>
 

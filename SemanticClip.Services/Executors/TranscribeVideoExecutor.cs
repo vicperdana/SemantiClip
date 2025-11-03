@@ -33,8 +33,34 @@ public sealed class TranscribeVideoExecutor : Executor<string, string>
         string videoPath, 
         IWorkflowContext context)
     {
+        _logger.LogInformation("TranscribeVideoExecutor started with video path: {VideoPath}", videoPath);
+        
+        // Validate input
+        if (string.IsNullOrEmpty(videoPath))
+        {
+            var error = "Video path is null or empty";
+            _logger.LogError(error);
+            throw new ArgumentException(error);
+        }
+        
+        if (!File.Exists(videoPath))
+        {
+            var error = $"Video file does not exist at path: {videoPath}";
+            _logger.LogError(error);
+            throw new FileNotFoundException(error, videoPath);
+        }
+        
         // Ensure FFMpeg is configured and binaries are available
-        await FFMpegConfiguration.EnsureFFMpegAsync(_logger);
+        try
+        {
+            await FFMpegConfiguration.EnsureFFMpegAsync(_logger);
+            _logger.LogInformation("FFmpeg configuration verified successfully");
+        }
+        catch (Exception ffmpegEx)
+        {
+            _logger.LogError(ffmpegEx, "FFmpeg configuration failed: {Message}", ffmpegEx.Message);
+            throw new InvalidOperationException($"FFmpeg setup failed: {ffmpegEx.Message}", ffmpegEx);
+        }
         
         _logger.LogInformation("Extracting audio from video: {VideoPath}", videoPath);
         string outputAudioPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.wav");
@@ -42,9 +68,12 @@ public sealed class TranscribeVideoExecutor : Executor<string, string>
         try
         {
             // Extract audio from video
+            _logger.LogInformation("Starting audio extraction to: {AudioPath}", outputAudioPath);
             await ExtractAudioFromVideoAsync(videoPath, outputAudioPath);
+            _logger.LogInformation("Audio extraction completed successfully");
             
             // Transcribe audio using injected service
+            _logger.LogInformation("Starting audio transcription");
             var transcript = await _audioService.TranscribeAsync(outputAudioPath, CancellationToken.None);
             
             _logger.LogInformation("Transcription completed: {Length} characters", transcript.Length);
@@ -53,8 +82,9 @@ public sealed class TranscribeVideoExecutor : Executor<string, string>
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during audio extraction or transcription");
-            throw new Exception($"Audio processing failed: {ex.Message}", ex);
+            _logger.LogError(ex, "Error during audio extraction or transcription. Type: {ExceptionType}, Message: {Message}, Inner: {InnerMessage}",
+                ex.GetType().Name, ex.Message, ex.InnerException?.Message ?? "None");
+            throw new Exception($"Audio processing failed: {ex.Message} (Type: {ex.GetType().Name})", ex);
         }
         finally
         {

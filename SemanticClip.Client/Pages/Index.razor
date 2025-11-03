@@ -155,7 +155,7 @@
     private string errorMessage = string.Empty;
     private string mcpCommitMessage = string.Empty;
     private string publishingMessage = string.Empty;
-    private bool isExporting = false;
+    //private bool isExporting = false;
     private string exportError = string.Empty;
     private string exportFormat = "docx";
     private string exportPageSize = string.Empty;
@@ -166,7 +166,7 @@
     {
         if (string.IsNullOrEmpty(response?.BlogPost))
             return;
-        isExporting = true;
+        //isExporting = true;
         exportError = string.Empty;
         try
         {
@@ -181,7 +181,7 @@
         }
         finally
         {
-            isExporting = false;
+            //isExporting = false;
             await InvokeAsync(StateHasChanged);
         }
     }
