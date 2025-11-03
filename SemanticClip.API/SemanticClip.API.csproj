@@ -17,7 +17,7 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.11" />
     <PackageReference Include="Microsoft.AspNetCore.Server.IIS" Version="2.2.6" />
     <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.43.0" />
-    <PackageReference Include="ModelContextProtocol" Version="0.1.0-preview.11" />
+    <PackageReference Include="ModelContextProtocol" Version="0.4.0-preview.3" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     <!-- Xabe.FFmpeg with automatic binary download - no external installation required -->
     <PackageReference Include="Xabe.FFmpeg" Version="5.2.6" />
