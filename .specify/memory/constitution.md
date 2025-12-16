@@ -2,23 +2,23 @@
 ================================================================================
 SYNC IMPACT REPORT
 ================================================================================
-Version Change: N/A → 1.0.0 (Initial constitution)
+Version Change: 1.1.0 → 1.1.1 (Patch: Runtime version update)
 
-Added Sections:
-- Core Principles (I–V)
-- Technology Stack section
-- Development Workflow section
-- Governance section
+Added Sections: None
 
-Modified Principles: N/A (initial version)
-Removed Sections: N/A (initial version)
+Modified Principles:
+- Technology Stack: .NET 9 → .NET 10
+
+Removed Sections: None
 
 Templates Requiring Updates:
-- .specify/templates/plan-template.md ✅ Compatible (Constitution Check section exists)
-- .specify/templates/spec-template.md ✅ Compatible (Requirements/testing align)
-- .specify/templates/tasks-template.md ✅ Compatible (phase structure matches workflow)
+- .specify/templates/plan-template.md ✅ Compatible (no structural changes)
+- .specify/templates/spec-template.md ✅ Compatible (no structural changes)
+- .specify/templates/tasks-template.md ✅ Compatible (no structural changes)
 
-Follow-up TODOs: None
+Follow-up TODOs:
+- Update global.json to target .NET 10 SDK
+- Update all .csproj TargetFramework to net10.0
 ================================================================================
 -->
 
@@ -59,9 +59,11 @@ All external service connections MUST be configurable without code changes:
 - GitHub MCP integration credentials via configuration
 - FFmpeg paths and parameters via environment or configuration
 - Ollama model selection via configuration
+- Service URLs resolved via .NET Aspire service discovery (no hardcoded endpoints)
 
 **Rationale**: Supports multiple deployment environments (local dev, staging, production) and
-allows operators to tune AI models without redeployment.
+allows operators to tune AI models without redeployment. Aspire service discovery eliminates
+URL management complexity and enables seamless local-to-cloud transitions.
 
 ### IV. Proof-of-Concept Boundaries
 
@@ -83,9 +85,12 @@ All AI workflow operations MUST produce observable outputs:
 - Error states MUST be captured with sufficient context for debugging
 - Processing status MUST be exposed to the UI for user feedback
 - FFmpeg operations MUST log command execution and exit codes
+- .NET Aspire Dashboard MUST be used for local development observability
+- OpenTelemetry traces, metrics, and logs via Aspire ServiceDefaults
 
 **Rationale**: AI workflows are non-deterministic; observability is essential for debugging
-failures and improving prompt engineering.
+failures and improving prompt engineering. Aspire provides unified telemetry out-of-the-box,
+reducing instrumentation overhead.
 
 ## Technology Stack
 
@@ -93,7 +98,8 @@ The following technologies are authoritative for SemantiClip:
 
 | Layer | Technology | Version/Notes |
 |-------|------------|---------------|
-| Runtime | .NET 9 | LTS preferred when available |
+| Runtime | .NET 10 | Latest runtime |
+| Orchestration | .NET Aspire | Local dev orchestration, service discovery, observability |
 | Frontend | Blazor WebAssembly | PWA-enabled |
 | UI Components | MudBlazor | Material Design |
 | AI Orchestration | Microsoft Agent Framework | Primary workflow engine |
@@ -102,6 +108,13 @@ The following technologies are authoritative for SemantiClip:
 | Media Processing | FFmpeg | Audio extraction |
 | GitHub Integration | ModelContextProtocol | Blog publishing |
 | Infrastructure as Code | Bicep | Azure deployment |
+
+### .NET Aspire Project Structure
+
+| Project | Purpose |
+|---------|----------|
+| SemanticClip.AppHost | Aspire orchestration; defines service topology and dependencies |
+| SemanticClip.ServiceDefaults | Shared configuration: OpenTelemetry, health checks, resilience |
 
 **Constraint**: New dependencies MUST be justified against existing capabilities. Prefer
 extending current integrations over adding new services.
@@ -145,4 +158,4 @@ guidelines for SemantiClip.
 **Compliance**: All PRs SHOULD reference relevant principles when making architectural decisions.
 Deviations MUST be justified in the PR description.
 
-**Version**: 1.0.0 | **Ratified**: 2025-12-15 | **Last Amended**: 2025-12-15
+**Version**: 1.1.1 | **Ratified**: 2025-12-15 | **Last Amended**: 2025-12-16
