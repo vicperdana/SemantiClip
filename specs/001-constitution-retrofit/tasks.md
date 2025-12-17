@@ -29,10 +29,10 @@ description: "Task list for Constitution Retrofit - .NET 10 & Aspire Migration"
 
 **Purpose**: Prerequisites and tooling verification
 
-- [ ] T001 Verify .NET 10 SDK installed (run `dotnet --version`, expect 10.0.100+)
-- [ ] T002 Install Aspire workload (run `dotnet workload install aspire`)
-- [ ] T003 Verify Docker Desktop running (required for Aspire Dashboard)
-- [ ] T004 Create backup branch checkpoint (run `git checkout -b 001-constitution-retrofit-backup`)
+- [x] T001 Verify .NET 10 SDK installed (run `dotnet --version`, expect 10.0.100+)
+- [x] T002 ~~Install Aspire workload~~ (deprecated - Aspire now available as NuGet packages, see https://aka.ms/aspire/support-policy)
+- [x] T003 Verify Docker Desktop running (required for Aspire Dashboard)
+- [x] T004 Create backup branch checkpoint (run `git checkout -b 001-constitution-retrofit-backup`)
 
 ---
 
